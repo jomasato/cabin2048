@@ -36,7 +36,7 @@
   --bg:#eaeef4;
   --panel:#ffffff;
   --board:#ccd5e2;
-  --cell:#e4e9f1;
+  --cellbg:#e4e9f1;
   --line:#c7d0dd;
   --w1:#0e8fb5; --w2:#4a5fd0; --w3:#b3308a; --w4:#b06f12;
   --ink:#121a24;
@@ -48,6 +48,8 @@
   --veil:rgba(234,238,244,.90);
   --shadow:0 1px 2px rgba(16,24,36,.10), 0 8px 24px rgba(16,24,36,.08);
 
+  --c1-b:#4aa3e0;   --c1-f:#ffffff;
+  --c2-b:#e8624a;   --c2-f:#ffffff;
   --t2-b:#dfe5ee;   --t2-f:#54606f;
   --t4-b:#c9d4e4;   --t4-f:#3f4c5c;
   --t8-b:#7fd3e0;   --t8-f:#0b3b44;
@@ -71,7 +73,7 @@
     --bg:#0b0f15;
     --panel:#141a23;
     --board:#141a23;
-    --cell:#232c39;
+    --cellbg:#232c39;
     --line:#242d3a;
     --w1:#38bdf8; --w2:#6a8bff; --w3:#d94fb0; --w4:#e9a441;
     --ink:#e7edf6;
@@ -83,6 +85,8 @@
     --veil:rgba(11,15,21,.90);
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
 
+    --c1-b:#2f7fc4;   --c1-f:#eaf5ff;
+    --c2-b:#c9452f;   --c2-f:#ffeeea;
     --t2-b:#2b3442;   --t2-f:#93a3b8;
     --t4-b:#36435a;   --t4-f:#b6c6da;
     --t8-b:#1f5f6e;   --t8-f:#d6f2f7;
@@ -101,7 +105,7 @@
   --bg:#0b0f15;
   --panel:#141a23;
   --board:#141a23;
-  --cell:#232c39;
+  --cellbg:#232c39;
   --line:#242d3a;
   --w1:#38bdf8; --w2:#6a8bff; --w3:#d94fb0; --w4:#e9a441;
   --ink:#e7edf6;
@@ -113,6 +117,8 @@
   --veil:rgba(11,15,21,.90);
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
 
+  --c1-b:#2f7fc4;   --c1-f:#eaf5ff;
+  --c2-b:#c9452f;   --c2-f:#ffeeea;
   --t2-b:#2b3442;   --t2-f:#93a3b8;
   --t4-b:#36435a;   --t4-f:#b6c6da;
   --t8-b:#1f5f6e;   --t8-f:#d6f2f7;
@@ -285,12 +291,13 @@ input{font:inherit}
 #s-play{
   --gap:clamp(7px,2.4vw,11px);
   --pad:var(--gap);
-  --boardw:min(calc(100vw - 32px), calc(100dvh - 250px), 420px);
+  --boardw:min(calc(100vw - 32px), calc(100dvh - 268px), 420px);
   --cell:calc((var(--boardw) - var(--pad)*2 - var(--gap)*3) / 4);
   touch-action:none;
+  position:absolute;
 }
 @supports not (height:100dvh){
-  #s-play{--boardw:min(calc(100vw - 32px), calc(100vh - 250px), 420px)}
+  #s-play{--boardw:min(calc(100vw - 32px), calc(100vh - 268px), 420px)}
 }
 .rail{display:flex;align-items:flex-end;gap:12px;padding-block:14px 10px}
 .rail-l{flex:1;min-width:0}
@@ -319,7 +326,7 @@ input{font:inherit}
   grid-template-rows:repeat(4,var(--cell));
   gap:var(--gap);
 }
-#cells div{background:var(--cell);border-radius:9px}
+#cells div{background:var(--cellbg);border-radius:9px}
 #tiles{position:absolute;inset:var(--pad)}
 .tile{
   position:absolute;top:0;left:0;
@@ -337,6 +344,9 @@ input{font:inherit}
 .tile.d3{font-size:calc(var(--cell) * .335)}
 .tile.d4{font-size:calc(var(--cell) * .265)}
 .tile.d5{font-size:calc(var(--cell) * .215)}
+.tile.c1{background:var(--c1-b);color:var(--c1-f)}
+.tile.c2{background:var(--c2-b);color:var(--c2-f)}
+.tile.v3{background:var(--t2-b);color:var(--t2-f)}
 .tile.v4{background:var(--t4-b);color:var(--t4-f)}
 .tile.v8{background:var(--t8-b);color:var(--t8-f)}
 .tile.v16{background:var(--t16-b);color:var(--t16-f)}
@@ -360,6 +370,43 @@ input{font:inherit}
   55%{transform:var(--pos) scale(1.12);opacity:1}
   100%{transform:var(--pos) scale(1);opacity:1}
 }
+
+/* next-card preview: only 1·2·3 has one, and it is the most important
+   number on the screen, so it sits between the name and the score */
+.next{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none;padding-inline:4px}
+.next .lab{font-family:var(--font-data);font-size:10px;letter-spacing:.14em;color:var(--ink-3)}
+.next .card{position:relative;width:38px;height:50px}
+.next .card .tile{
+  position:absolute;inset:0;width:auto;height:auto;
+  transform:none;transition:none;border-radius:8px;
+  font-size:21px;
+}
+.next .card .tile.d3,.next .card .tile.d4{font-size:15px}
+
+.toast{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  z-index:15;pointer-events:none;
+  background:var(--panel);border:1px solid var(--line);border-radius:999px;
+  padding:10px 20px;font-weight:650;font-size:17px;box-shadow:var(--shadow);
+  animation:toast 1.9s ease both;
+}
+@keyframes toast{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.85)}
+  12%,72%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-62%) scale(1)}
+}
+
+.seg{display:flex;flex-direction:column;gap:8px;padding-block:4px 16px}
+.seg-b{
+  display:flex;align-items:baseline;gap:12px;text-align:left;
+  border:1px solid var(--line);background:var(--panel);border-radius:14px;
+  padding:13px 15px;transition:border-color .12s ease, background .12s ease;
+}
+.seg-b b{font-family:var(--font-num);font-size:19px;font-weight:700;letter-spacing:-.01em;flex:none}
+.seg-b small{color:var(--ink-3);font-size:12.5px;line-height:1.4}
+.seg-b[aria-checked="true"]{border-color:var(--accent);background:var(--panel)}
+.seg-b[aria-checked="true"] b{color:var(--accent)}
+.seg-b[aria-checked="true"] small{color:var(--ink-2)}
 
 .turnbar{display:flex;align-items:center;justify-content:center;gap:7px;padding-block:14px 6px}
 .tb{width:7px;height:7px;border-radius:50%;background:var(--line);transition:all .2s ease}
@@ -454,9 +501,17 @@ input{font:inherit}
 <section class="screen" id="s-setup" hidden>
   <div class="head">
     <button class="back" data-nav="home" aria-label="戻る">←</button>
-    <h1>メンバー</h1>
+    <h1>ラウンドの設定</h1>
   </div>
   <div class="scroll">
+    <div class="seg" role="radiogroup" aria-label="ルール">
+      <button class="seg-b" id="mode-2048" role="radio" aria-checked="true">
+        <b>2048</b><small>同じ数字をくっつける。滑るように動く</small>
+      </button>
+      <button class="seg-b" id="mode-123" role="radio" aria-checked="false">
+        <b>1·2·3</b><small>1と2で3。次に来る札が見えるぶん、運ではなく計画の勝負になる</small>
+      </button>
+    </div>
     <div class="plist" id="plist"></div>
     <button class="btn sm" id="add-player" style="margin-top:10px">＋ 人を増やす</button>
 
@@ -506,6 +561,10 @@ input{font:inherit}
       <div class="rail-who"><span class="dot"></span><span class="nm" id="pl-name"></span></div>
       <div class="rail-target" id="pl-target"></div>
     </div>
+    <div class="next" id="pl-next" hidden>
+      <span class="lab">NEXT</span>
+      <span class="card"><span class="tile" id="pl-next-tile"></span></span>
+    </div>
     <div class="rail-r">
       <div class="score num" id="pl-score">0</div>
       <div class="score-lab">Score</div>
@@ -553,7 +612,7 @@ function load(k, d){ try{ var v = localStorage.getItem(k); return v ? JSON.parse
 function save(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 function drop(k){ try{ localStorage.removeItem(k); }catch(e){} }
 
-var prefs   = load(K.prefs, {theme:"dark", showTarget:true});
+var prefs   = load(K.prefs, {theme:"dark", showTarget:true, mode:"2048"});
 var roster  = load(K.players, null);
 var history = load(K.history, []);
 var bests   = load(K.best, {});
@@ -628,10 +687,30 @@ function mulberry32(a){
    stream of (which empty cell, which value) events. Board states diverge with
    play, luck does not. */
 var EVENT_COUNT = 2600;
-function buildEvents(seed){
+
+function events2048(seed){
   var rnd = mulberry32(seed >>> 0), out = new Array(EVENT_COUNT);
   for (var i=0;i<EVENT_COUNT;i++){
     out[i] = {r: rnd(), v: rnd() < 0.9 ? 2 : 4};
+  }
+  return out;
+}
+
+/* 1·2·3 draws from a shuffled bag of four each of 1, 2 and 3, so the mix is
+   even over any twelve draws rather than merely even on average. The bonus
+   roll rides along in the same event: whether it fires depends on your own
+   board, but the roll itself is the same number for everybody. */
+function events123(seed){
+  var rnd = mulberry32(seed >>> 0), out = new Array(EVENT_COUNT), bag = [];
+  for (var i=0;i<EVENT_COUNT;i++){
+    if (!bag.length){
+      bag = [1,1,1,1,2,2,2,2,3,3,3,3];
+      for (var j=bag.length-1;j>0;j--){
+        var k = Math.floor(rnd() * (j+1)), t = bag[j];
+        bag[j] = bag[k]; bag[k] = t;
+      }
+    }
+    out[i] = {r: rnd(), card: bag.pop(), bonusRoll: rnd(), bonusPick: rnd()};
   }
   return out;
 }
@@ -716,6 +795,167 @@ function maxTile(g){
   return m;
 }
 
+/* ===================== 1·2·3 core ===================== */
+/* Cards step one cell at a time and only the first shift or pair in each lane
+   resolves, so the board stays tight. 1 and 2 pair into 3; from there equals
+   double. The new card enters on the edge the swipe came from, in one of the
+   lanes that actually moved. */
+function lanesFor(dir){
+  var out = [];
+  for (var k=0;k<4;k++){
+    var cells = [];
+    for (var i=0;i<4;i++){
+      if (dir === "left")  cells.push([k, i]);
+      if (dir === "right") cells.push([k, 3-i]);
+      if (dir === "up")    cells.push([i, k]);
+      if (dir === "down")  cells.push([3-i, k]);
+    }
+    out.push(cells);
+  }
+  return out;
+}
+function canPair(a, b){
+  if (!a || !b) return false;
+  if (a.v === 1 && b.v === 2) return true;
+  if (a.v === 2 && b.v === 1) return true;
+  return a.v === b.v && a.v >= 3;
+}
+function laneOp(arr){
+  for (var i=0;i<3;i++){
+    if (arr[i] === null && arr[i+1] !== null) return i;
+    if (arr[i] !== null && canPair(arr[i], arr[i+1])) return i;
+  }
+  return -1;
+}
+function readLane(g, cells){
+  return [g[cells[0][0]][cells[0][1]], g[cells[1][0]][cells[1][1]],
+          g[cells[2][0]][cells[2][1]], g[cells[3][0]][cells[3][1]]];
+}
+function bonusValue(mx, pick){
+  var opts = [], v = 6;
+  while (v <= mx/8){ opts.push(v); v *= 2; }
+  if (!opts.length) opts = [6];
+  return opts[Math.floor(pick * opts.length)];
+}
+/* what the preview is showing - and therefore what the next swipe will deal */
+function peek123(G){
+  var ev = G.events[G.ei % EVENT_COUNT];
+  var mx = maxTile(G.grid);
+  if (mx >= 48 && ev.bonusRoll < 1/21){
+    return {v: bonusValue(mx, ev.bonusPick), bonus: true};
+  }
+  return {v: ev.card, bonus: false};
+}
+function begin123(G){
+  var cells = [];
+  for (var r=0;r<4;r++) for (var c=0;c<4;c++) cells.push([r,c]);
+  for (var i=0;i<9;i++){
+    var ev = G.events[G.ei++];
+    var cell = cells.splice(Math.floor(ev.r * cells.length), 1)[0];
+    G.grid[cell[0]][cell[1]] = {id: nextId++, v: ev.card, r: cell[0], c: cell[1]};
+  }
+}
+function move123(G, dir){
+  eachTile(G.grid, function(t){ t.from = {r:t.r, c:t.c}; });
+  var incoming = peek123(G);          /* decided before the board changes */
+  var lanes = lanesFor(dir);
+  var movedLanes = [], ghosts = [], top = 0;
+
+  for (var L=0;L<4;L++){
+    var cells = lanes[L];
+    var arr = readLane(G.grid, cells);
+    var at = laneOp(arr);
+    if (at < 0) continue;
+    movedLanes.push(L);
+
+    if (arr[at] === null){
+      arr[at] = arr[at+1];
+    } else {
+      var nv = arr[at].v + arr[at+1].v;   /* 1+2=3, and equals double */
+      var tgt = cells[at];
+      ghosts.push({id: arr[at].id,   v: arr[at].v,   r: tgt[0], c: tgt[1]});
+      ghosts.push({id: arr[at+1].id, v: arr[at+1].v, r: tgt[0], c: tgt[1]});
+      arr[at] = {id: nextId++, v: nv, isNew: true};
+      if (nv > top) top = nv;
+    }
+    for (var j=at+1;j<3;j++){ arr[j] = arr[j+1]; }
+    arr[3] = null;
+
+    for (var i=0;i<4;i++){
+      var p = cells[i];
+      G.grid[p[0]][p[1]] = arr[i];
+      if (arr[i]){ arr[i].r = p[0]; arr[i].c = p[1]; }
+    }
+  }
+
+  if (!movedLanes.length) return {moved:false, ghosts:[], top:0};
+
+  var ev = G.events[G.ei % EVENT_COUNT];
+  G.ei++;
+  var slot = lanes[movedLanes[Math.floor(ev.r * movedLanes.length)]][3];
+  G.grid[slot[0]][slot[1]] = {id: nextId++, v: incoming.v, r: slot[0], c: slot[1]};
+  return {moved:true, ghosts:ghosts, top:top};
+}
+function over123(G){
+  var dirs = ["left","right","up","down"];
+  for (var d=0;d<4;d++){
+    var lanes = lanesFor(dirs[d]);
+    for (var L=0;L<4;L++){
+      if (laneOp(readLane(G.grid, lanes[L])) >= 0) return false;
+    }
+  }
+  return true;
+}
+/* Only the final board scores, and it scores in powers of three - which is why
+   one big card beats a tidy board full of small ones. */
+function score123(G){
+  var s = 0;
+  eachTile(G.grid, function(t){
+    if (t.v >= 3){
+      s += Math.pow(3, Math.round(Math.log(t.v/3) / Math.LN2) + 1);
+    }
+  });
+  return s;
+}
+var CLS123 = {1:"c1", 2:"c2", 3:"v3", 6:"v4", 12:"v8", 24:"v16", 48:"v32",
+              96:"v64", 192:"v128", 384:"v256", 768:"v512", 1536:"v1024",
+              3072:"v2048", 6144:"vbig"};
+
+/* ===================== the two rule sets ===================== */
+var MODES = {
+  "2048": {
+    name: "2048",
+    preview: false,
+    events: events2048,
+    begin: function(G){ spawn(G); spawn(G); },
+    move: function(G, dir){
+      var res = applyMove(G, dir);
+      if (!res.moved) return res;
+      G.acc += res.gained;
+      spawn(G);
+      return res;
+    },
+    score: function(G){ return G.acc; },
+    over: function(G){ return !canMove(G.grid); },
+    cls: function(v){ return (v > 2048 ? "vbig" : "v" + v) + " d" + String(v).length; },
+    milestones: [2048],
+    celebrate: "ask"
+  },
+  "123": {
+    name: "1·2·3",
+    preview: true,
+    events: events123,
+    begin: begin123,
+    move: move123,
+    score: score123,
+    over: over123,
+    cls: function(v){ return (CLS123[v] || "vbig") + " d" + String(v).length; },
+    milestones: [96, 384, 768, 1536, 3072],
+    celebrate: "toast"
+  }
+};
+function mode(){ return MODES[(session && session.mode) || "2048"]; }
+
 /* ===================== board rendering ===================== */
 var cellsEl = $("cells"), tilesEl = $("tiles");
 (function(){
@@ -723,11 +963,7 @@ var cellsEl = $("cells"), tilesEl = $("tiles");
 })();
 var els = {};   /* tile id -> element */
 
-function tileClass(v){
-  var cls = "tile v" + v + " d" + String(v).length;
-  if (v > 2048) cls = "tile vbig d" + String(v).length;
-  return cls;
-}
+function tileClass(v){ return "tile " + mode().cls(v); }
 function place(el, r, c){
   el.style.setProperty("--r", r);
   el.style.setProperty("--c", c);
@@ -795,9 +1031,10 @@ function clearBoard(){
 }
 
 /* ===================== round flow ===================== */
-function newSession(players){
+function newSession(players, m){
   return {
     round: 1,
+    mode: m,
     seed: hashSeed(String(Date.now()) + ":" + players.map(function(p){return p.name}).join("|")),
     players: players,
     idx: 0,
@@ -805,6 +1042,7 @@ function newSession(players){
     live: null
   };
 }
+function bestKey(name){ return name + "@" + ((session && session.mode) || "2048"); }
 function persist(){ if (session) save(K.session, session); else drop(K.session); }
 
 function targetScore(){
@@ -817,7 +1055,7 @@ function targetScore(){
 function toHandoff(){
   var p = session.players[session.idx];
   paint($("s-handoff"), session.idx);
-  $("ho-eyebrow").textContent = "Round " + session.round + " · " + (session.idx+1) + " / " + session.players.length;
+  $("ho-eyebrow").textContent = mode().name + " · Round " + session.round + " · " + (session.idx+1) + " / " + session.players.length;
   $("ho-name").innerHTML = "";
   var nm = document.createTextNode(p.name);
   $("ho-name").appendChild(nm);
@@ -832,9 +1070,9 @@ function toHandoff(){
   } else if (t){
     $("ho-lab").textContent = "順番";
     $("ho-val").textContent = session.players.length - session.idx + " 人が残っている";
-  } else if (bests[p.name]){
+  } else if (bests[bestKey(p.name)]){
     $("ho-lab").textContent = "自己ベスト";
-    $("ho-val").innerHTML = "<span class=\"n\">" + fmt(bests[p.name]) + "</span> 点";
+    $("ho-val").innerHTML = "<span class=\"n\">" + fmt(bests[bestKey(p.name)]) + "</span> 点";
   } else {
     $("ho-lab").textContent = "先攻";
     $("ho-val").textContent = "基準をつくる番";
@@ -847,14 +1085,15 @@ function beginTurn(resume){
   paint($("s-play"), session.idx);
   clearBoard();
 
+  var M = mode();
   if (resume && session.live){
     var L = session.live;
     game = {
       grid: emptyGrid(),
-      events: buildEvents(session.seed + session.round),
-      ei: L.ei, score: L.score, moves: L.moves,
+      events: M.events(session.seed + session.round),
+      ei: L.ei, acc: L.acc || 0, moves: L.moves,
       elapsed: L.elapsed, startedAt: Date.now(),
-      over: false, hit2048: L.hit2048
+      over: false, hit: L.hit || {}
     };
     for (var r=0;r<4;r++) for (var c=0;c<4;c++){
       var v = L.grid[r][c];
@@ -863,12 +1102,12 @@ function beginTurn(resume){
   } else {
     game = {
       grid: emptyGrid(),
-      events: buildEvents(session.seed + session.round),
-      ei: 0, score: 0, moves: 0,
+      events: M.events(session.seed + session.round),
+      ei: 0, acc: 0, moves: 0,
       elapsed: 0, startedAt: Date.now(),
-      over: false, hit2048: false
+      over: false, hit: {}
     };
-    spawn(game); spawn(game);
+    M.begin(game);
   }
 
   $("pl-name").textContent = p.name;
@@ -881,7 +1120,18 @@ function beginTurn(resume){
 }
 
 function paintRail(){
-  $("pl-score").textContent = fmt(game.score);
+  var M = mode();
+  $("pl-score").textContent = fmt(M.score(game));
+
+  var nx = $("pl-next");
+  nx.hidden = !M.preview;
+  if (M.preview){
+    var p = peek123(game);
+    var card = $("pl-next-tile");
+    card.className = p.bonus ? "tile v2048 d1" : ("tile " + M.cls(p.v));
+    card.textContent = p.bonus ? "+" : p.v;
+  }
+
   var el = $("pl-target");
   var t = targetScore();
   if (!prefs.showTarget || !t){
@@ -889,7 +1139,7 @@ function paintRail(){
     el.classList.remove("ahead");
     return;
   }
-  var diff = t.score - game.score;
+  var diff = t.score - M.score(game);
   if (diff > 0){
     el.classList.remove("ahead");
     el.innerHTML = esc(t.name) + " まで あと <b>" + fmt(diff) + "</b>";
@@ -915,31 +1165,41 @@ function saveLive(){
     g.push(row);
   }
   session.live = {
-    grid: g, ei: game.ei, score: game.score, moves: game.moves,
+    grid: g, ei: game.ei, acc: game.acc, moves: game.moves,
     elapsed: game.elapsed + (Date.now() - game.startedAt),
-    hit2048: game.hit2048
+    hit: game.hit
   };
   persist();
 }
 
+function toast(msg){
+  var el = document.createElement("div");
+  el.className = "toast";
+  el.textContent = msg;
+  $("s-play").appendChild(el);
+  setTimeout(function(){ el.remove(); }, 2000);
+}
+
 function doMove(dir){
   if (!game || game.over) return;
-  var res = applyMove(game, dir);
+  var M = mode();
+  var res = M.move(game, dir);
   if (!res.moved) return;           /* a dead swipe burns no luck */
-  game.score += res.gained;
   game.moves++;
-  var born = spawn(game);
-  if (born) born.isNew = false;
   renderBoard(res);
   paintRail();
   saveLive();
 
-  if (res.top >= 2048 && !game.hit2048){
-    game.hit2048 = true;
-    setTimeout(function(){ celebrate(); }, 260);
-    return;
+  if (res.top && M.milestones.indexOf(res.top) >= 0 && !game.hit[res.top]){
+    game.hit[res.top] = 1;
+    saveLive();
+    if (M.celebrate === "ask"){
+      setTimeout(celebrate, 260);
+      return;                       /* the board can wait; the choice cannot */
+    }
+    toast(res.top + "、到達");
   }
-  if (!canMove(game.grid)){
+  if (M.over(game)){
     game.over = true;
     setTimeout(function(){ finishTurn(false); }, 300);
   }
@@ -956,7 +1216,7 @@ function overlay(html, wire){
 }
 function statBlock(){
   return "<div class=\"stats\">" +
-    "<div class=\"stat\"><span class=\"k\">Score</span><span class=\"v\">" + fmt(game.score) + "</span></div>" +
+    "<div class=\"stat\"><span class=\"k\">Score</span><span class=\"v\">" + fmt(mode().score(game)) + "</span></div>" +
     "<div class=\"stat\"><span class=\"k\">Max</span><span class=\"v\">" + maxTile(game.grid) + "</span></div>" +
     "<div class=\"stat\"><span class=\"k\">Moves</span><span class=\"v\">" + game.moves + "</span></div>" +
   "</div>";
@@ -982,7 +1242,7 @@ function finishTurn(voluntary){
   game.over = true;
   var elapsed = game.elapsed + (Date.now() - game.startedAt);
   var p = session.players[session.idx];
-  var rec = {name: p.name, color: session.idx, score: game.score, max: maxTile(game.grid), moves: game.moves, ms: elapsed, gaveUp: !!voluntary};
+  var rec = {name: p.name, color: session.idx, score: mode().score(game), max: maxTile(game.grid), moves: game.moves, ms: elapsed, gaveUp: !!voluntary};
 
   var title = voluntary ? "おつかれさま" : "手が尽きた";
   var last = session.idx === session.players.length - 1;
@@ -1000,7 +1260,8 @@ function finishTurn(voluntary){
         if (!e.target.closest("[data-next]")) return;
         close();
         session.results.push(rec);
-        if (!bests[rec.name] || rec.score > bests[rec.name]){ bests[rec.name] = rec.score; save(K.best, bests); }
+        var bk = bestKey(rec.name);
+        if (!bests[bk] || rec.score > bests[bk]){ bests[bk] = rec.score; save(K.best, bests); }
         session.live = null;
         session.idx++;
         if (session.idx >= session.players.length){ endRound(); }
@@ -1019,12 +1280,12 @@ function rankOf(list){
 }
 function endRound(){
   var ranked = rankOf(session.results);
-  history.unshift({ts: Date.now(), round: session.round, results: ranked});
+  history.unshift({ts: Date.now(), round: session.round, mode: session.mode, results: ranked});
   history = history.slice(0, 20);
   save(K.history, history);
 
   paint($("s-standings"), ranked[0].color);
-  $("st-eyebrow").textContent = "Round " + session.round + " · 結果";
+  $("st-eyebrow").textContent = mode().name + " · Round " + session.round + " · 結果";
   $("st-winner").textContent = ranked[0].name;
 
   var list = $("st-list");
@@ -1060,7 +1321,7 @@ function paintHome(){
     var lab = document.createElement("div");
     lab.className = "eyebrow";
     lab.style.marginBottom = "4px";
-    lab.textContent = "前回 Round " + h.round;
+    lab.textContent = (MODES[h.mode || "2048"] || MODES["2048"]).name + " · 前回 Round " + h.round;
     box.appendChild(lab);
     for (var i=0;i<h.results.length;i++){
       var r = h.results[i];
@@ -1098,7 +1359,16 @@ function paintSetup(){
   }
   $("add-player").hidden = draft.length >= 4;
   $("sw-target").setAttribute("aria-checked", prefs.showTarget ? "true" : "false");
+  $("mode-2048").setAttribute("aria-checked", prefs.mode === "123" ? "false" : "true");
+  $("mode-123").setAttribute("aria-checked", prefs.mode === "123" ? "true" : "false");
 }
+function pickMode(m){
+  prefs.mode = m;
+  save(K.prefs, prefs);
+  paintSetup();
+}
+$("mode-2048").addEventListener("click", function(){ pickMode("2048"); });
+$("mode-123").addEventListener("click", function(){ pickMode("123"); });
 $("add-player").addEventListener("click", function(){ if (draft.length < 4){ draft.push(""); paintSetup(); } });
 $("sw-target").addEventListener("click", function(){
   prefs.showTarget = !prefs.showTarget;
@@ -1118,7 +1388,7 @@ $("start-round").addEventListener("click", function(){
   }
   roster = players.map(function(p){ return p.name; });
   save(K.players, roster);
-  session = newSession(players);
+  session = newSession(players, prefs.mode === "123" ? "123" : "2048");
   persist();
   toHandoff();
 });
@@ -1135,6 +1405,7 @@ $("go-resume").addEventListener("click", function(){
 $("st-again").addEventListener("click", function(){
   session = {
     round: session.round + 1,
+    mode: session.mode,
     seed: hashSeed(String(session.seed) + ":" + session.round + ":" + Date.now()),
     players: session.players,
     idx: 0, results: [], live: null
