@@ -1,0 +1,1280 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="1台をまわして、全員おなじ運で競う2048。電波がなくても最後まで遊べる。">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="2048">
+<meta name="theme-color" content="#eaeef4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0f15" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="icon" href="./favicon-32.png" sizes="32x32">
+<style>
+  /* Standing in for what the Artifact host normally supplies, plus the one
+     thing a home-screen app needs that a hosted page does not: the inset
+     strips at the notch and the home indicator have to be painted too, or
+     they flash white against the dark board. */
+  :root{
+    color-scheme:light dark;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    background:var(--bg);
+  }
+  [hidden]{display:none!important}
+  img{max-width:100%}
+</style>
+
+<!-- shared:start -- everything between the markers is also what ships as the
+     Artifact; tools/make_artifact.py cuts it back out. Edit it here. -->
+<title>Cabin 2048</title>
+<style>
+/* ---------- tokens : light (day cabin) ---------- */
+:root{
+  --bg:#eaeef4;
+  --panel:#ffffff;
+  --board:#ccd5e2;
+  --cell:#e4e9f1;
+  --line:#c7d0dd;
+  --w1:#0e8fb5; --w2:#4a5fd0; --w3:#b3308a; --w4:#b06f12;
+  --ink:#121a24;
+  --ink-2:#4d5b6d;
+  --ink-3:#7a8798;
+  --accent:#b06f12;
+  --accent-ink:#ffffff;
+  --good:#1f7a4d;
+  --veil:rgba(234,238,244,.90);
+  --shadow:0 1px 2px rgba(16,24,36,.10), 0 8px 24px rgba(16,24,36,.08);
+
+  --t2-b:#dfe5ee;   --t2-f:#54606f;
+  --t4-b:#c9d4e4;   --t4-f:#3f4c5c;
+  --t8-b:#7fd3e0;   --t8-f:#0b3b44;
+  --t16-b:#3fbcd0;  --t16-f:#04323c;
+  --t32-b:#5aa9ec;  --t32-f:#04294a;
+  --t64-b:#6f86ef;  --t64-f:#0c1547;
+  --t128-b:#9a83f0; --t128-f:#1b1049;
+  --t256-b:#bd7ae4; --t256-f:#330a4a;
+  --t512-b:#e07ab9; --t512-f:#48083a;
+  --t1024-b:#ef7089;--t1024-f:#4a0a1c;
+  --t2048-b:#f0b13c;--t2048-f:#3a2500;
+  --tbig-b:#f6d96a; --tbig-f:#3a2d00;
+
+  --font-ui:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI",system-ui,sans-serif;
+  --font-num:ui-rounded,"SF Pro Rounded",-apple-system,"Hiragino Sans",system-ui,sans-serif;
+  --font-data:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+/* ---------- tokens : dark (night cabin) — the default look ---------- */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b0f15;
+    --panel:#141a23;
+    --board:#141a23;
+    --cell:#232c39;
+    --line:#242d3a;
+    --w1:#38bdf8; --w2:#6a8bff; --w3:#d94fb0; --w4:#e9a441;
+    --ink:#e7edf6;
+    --ink-2:#9aa8bc;
+    --ink-3:#6b7a8f;
+    --accent:#e9a441;
+    --accent-ink:#1a1204;
+    --good:#4ade80;
+    --veil:rgba(11,15,21,.90);
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+
+    --t2-b:#2b3442;   --t2-f:#93a3b8;
+    --t4-b:#36435a;   --t4-f:#b6c6da;
+    --t8-b:#1f5f6e;   --t8-f:#d6f2f7;
+    --t16-b:#137a86;  --t16-f:#e4fbfe;
+    --t32-b:#1f6fb2;  --t32-f:#e9f4ff;
+    --t64-b:#3559c9;  --t64-f:#edf0ff;
+    --t128-b:#6247d1; --t128-f:#f0ecff;
+    --t256-b:#8a3fc4; --t256-f:#f7ecff;
+    --t512-b:#b1358f; --t512-f:#ffeaf8;
+    --t1024-b:#c6365f;--t1024-f:#ffe9ee;
+    --t2048-b:#e0a12a;--t2048-f:#2a1c02;
+    --tbig-b:#f0cf5a; --tbig-f:#2a2202;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b0f15;
+  --panel:#141a23;
+  --board:#141a23;
+  --cell:#232c39;
+  --line:#242d3a;
+  --w1:#38bdf8; --w2:#6a8bff; --w3:#d94fb0; --w4:#e9a441;
+  --ink:#e7edf6;
+  --ink-2:#9aa8bc;
+  --ink-3:#6b7a8f;
+  --accent:#e9a441;
+  --accent-ink:#1a1204;
+  --good:#4ade80;
+  --veil:rgba(11,15,21,.90);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+
+  --t2-b:#2b3442;   --t2-f:#93a3b8;
+  --t4-b:#36435a;   --t4-f:#b6c6da;
+  --t8-b:#1f5f6e;   --t8-f:#d6f2f7;
+  --t16-b:#137a86;  --t16-f:#e4fbfe;
+  --t32-b:#1f6fb2;  --t32-f:#e9f4ff;
+  --t64-b:#3559c9;  --t64-f:#edf0ff;
+  --t128-b:#6247d1; --t128-f:#f0ecff;
+  --t256-b:#8a3fc4; --t256-f:#f7ecff;
+  --t512-b:#b1358f; --t512-f:#ffeaf8;
+  --t1024-b:#c6365f;--t1024-f:#ffe9ee;
+  --t2048-b:#e0a12a;--t2048-f:#2a1c02;
+  --tbig-b:#f0cf5a; --tbig-f:#2a2202;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  position:relative;   /* screens are absolute: keep them inside the safe-area padding */
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-ui);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior:none;
+  touch-action:manipulation;
+  -webkit-touch-callout:none;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+input{font:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+/* ---------- shell ---------- */
+.screen{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  padding-inline:16px;
+  overflow:hidden;
+}
+.screen[hidden]{display:none!important}
+.scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;flex:1;display:flex;flex-direction:column}
+
+.eyebrow{
+  font-family:var(--font-data);
+  font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);
+}
+.num{font-family:var(--font-data);font-variant-numeric:tabular-nums}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;min-height:54px;padding:0 20px;
+  border-radius:14px;
+  font-weight:600;font-size:17px;
+  background:var(--panel);color:var(--ink);
+  border:1px solid var(--line);
+  transition:transform .12s ease, opacity .12s ease;
+}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;box-shadow:var(--shadow)}
+.btn.player{background:var(--p);color:var(--p-ink);border-color:transparent;box-shadow:var(--shadow)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink-2);min-height:44px;font-size:15px;font-weight:500}
+.btn.sm{min-height:44px;font-size:15px}
+.btn[disabled]{opacity:.35;pointer-events:none}
+.btn.armed{background:#c6365f;color:#fff;border-color:transparent}
+
+.footer{
+  display:flex;flex-direction:column;gap:8px;
+  padding-block:12px 16px;
+  padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+}
+
+/* ---------- home ---------- */
+.home-top{flex:1 0 auto;display:flex;flex-direction:column;justify-content:center;gap:4px;padding-block:24px}
+.wordmark{
+  font-family:var(--font-num);
+  font-size:clamp(64px,22vw,104px);
+  font-weight:800;letter-spacing:-.04em;line-height:.9;
+  color:var(--ink);
+  display:flex;align-items:baseline;gap:2px;
+}
+.wordmark span:nth-child(1){color:var(--w1)}
+.wordmark span:nth-child(2){color:var(--w2)}
+.wordmark span:nth-child(3){color:var(--w3)}
+.wordmark span:nth-child(4){color:var(--w4)}
+.tagline{color:var(--ink-2);margin-top:14px}
+
+.rules{margin:22px 0 0;border-top:1px solid var(--line);padding-top:15px;display:flex;flex-direction:column;gap:12px}
+.rule{display:flex;gap:14px;align-items:baseline}
+.rule dt{flex:none;width:68px;font-size:12px;font-weight:600;color:var(--ink-3)}
+.rule dd{margin:0;font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+
+.recap{
+  margin-top:22px;border-top:1px solid var(--line);padding-top:14px;
+  display:flex;flex-direction:column;gap:9px;
+}
+.recap-row{display:flex;align-items:center;gap:10px}
+.recap-row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recap-row .sc{font-family:var(--font-data);font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.recap-row.win .nm{font-weight:650}
+.recap-row.win .sc{color:var(--ink)}
+
+.dot{width:9px;height:9px;border-radius:50%;background:var(--p);flex:none}
+.rank{font-family:var(--font-data);font-size:12px;color:var(--ink-3);width:14px;flex:none}
+
+/* ---------- setup ---------- */
+.head{display:flex;align-items:center;gap:10px;padding-block:14px 8px;min-height:52px}
+.head h1{font-size:17px;font-weight:650;margin:0;flex:1}
+.back{width:40px;height:40px;margin-left:-10px;display:grid;place-items:center;color:var(--ink-2);flex:none}
+
+.plist{display:flex;flex-direction:column;gap:10px;padding-block:6px}
+.prow{
+  display:flex;align-items:center;gap:12px;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:10px 12px;
+}
+.prow .dot{width:12px;height:12px}
+.prow input{
+  flex:1;min-width:0;border:0;background:transparent;color:var(--ink);
+  font-size:17px;padding:6px 0;
+}
+.prow input::placeholder{color:var(--ink-3)}
+.prow .del{width:36px;height:36px;display:grid;place-items:center;color:var(--ink-3);flex:none}
+
+.opt{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 2px;border-top:1px solid var(--line);
+}
+.opt-txt{flex:1}
+.opt-txt b{display:block;font-weight:600;font-size:15px}
+.opt-txt small{color:var(--ink-3);font-size:13px;line-height:1.45;display:block;margin-top:2px}
+.sw{
+  width:50px;height:30px;border-radius:15px;background:var(--line);
+  position:relative;flex:none;transition:background .16s ease;margin-top:2px;
+}
+.sw::after{
+  content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;
+  background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .16s ease;
+}
+.sw[aria-checked="true"]{background:var(--accent)}
+.sw[aria-checked="true"]::after{transform:translateX(20px)}
+
+.note{color:var(--ink-3);font-size:13px;line-height:1.55}
+
+/* ---------- handoff ---------- */
+#s-handoff{
+  background-color:var(--bg);
+  background-image:linear-gradient(168deg, var(--p-glow) 0%, transparent 62%);
+}
+.ho-body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0;gap:18px;padding-block:24px}
+.ho-name{
+  font-family:var(--font-num);
+  font-size:clamp(40px,13vw,60px);font-weight:800;letter-spacing:-.03em;line-height:1.02;
+  color:var(--p-text);
+  overflow-wrap:anywhere;
+}
+.ho-name em{font-style:normal;font-size:.5em;font-weight:600;color:var(--ink-2);letter-spacing:0}
+.ho-strip{
+  display:flex;flex-direction:column;gap:2px;
+  border-left:3px solid var(--p);padding-left:12px;
+}
+.ho-strip .lab{font-family:var(--font-data);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.ho-strip .val{font-size:17px;font-weight:600}
+.ho-strip .val .n{font-family:var(--font-data);font-variant-numeric:tabular-nums}
+
+/* ---------- play ---------- */
+#s-play{
+  --gap:clamp(7px,2.4vw,11px);
+  --pad:var(--gap);
+  --boardw:min(calc(100vw - 32px), calc(100dvh - 250px), 420px);
+  --cell:calc((var(--boardw) - var(--pad)*2 - var(--gap)*3) / 4);
+  touch-action:none;
+}
+@supports not (height:100dvh){
+  #s-play{--boardw:min(calc(100vw - 32px), calc(100vh - 250px), 420px)}
+}
+.rail{display:flex;align-items:flex-end;gap:12px;padding-block:14px 10px}
+.rail-l{flex:1;min-width:0}
+.rail-who{display:flex;align-items:center;gap:8px}
+.rail-who .nm{font-weight:650;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rail-target{font-size:13px;color:var(--ink-2);margin-top:3px;height:19px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rail-target b{color:var(--ink);font-weight:600;font-family:var(--font-data);font-variant-numeric:tabular-nums}
+.rail-target.ahead b{color:var(--good)}
+.rail-r{text-align:right;flex:none}
+.score{
+  font-family:var(--font-data);font-variant-numeric:tabular-nums;
+  font-size:30px;font-weight:600;line-height:1;letter-spacing:-.02em;
+}
+.score-lab{font-family:var(--font-data);font-size:10px;letter-spacing:.14em;color:var(--ink-3);text-transform:uppercase}
+
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.board{
+  position:relative;
+  width:var(--boardw);height:var(--boardw);
+  background:var(--board);border-radius:16px;padding:var(--pad);
+  touch-action:none;
+}
+#cells{
+  display:grid;
+  grid-template-columns:repeat(4,var(--cell));
+  grid-template-rows:repeat(4,var(--cell));
+  gap:var(--gap);
+}
+#cells div{background:var(--cell);border-radius:9px}
+#tiles{position:absolute;inset:var(--pad)}
+.tile{
+  position:absolute;top:0;left:0;
+  width:var(--cell);height:var(--cell);
+  border-radius:9px;
+  display:grid;place-items:center;
+  font-family:var(--font-num);font-weight:700;letter-spacing:-.02em;
+  font-size:calc(var(--cell) * .42);
+  background:var(--t2-b);color:var(--t2-f);
+  --pos:translate(calc((var(--cell) + var(--gap)) * var(--c,0)), calc((var(--cell) + var(--gap)) * var(--r,0)));
+  transform:var(--pos);
+  transition:transform .11s cubic-bezier(.22,.68,.36,1);
+  will-change:transform;
+}
+.tile.d3{font-size:calc(var(--cell) * .335)}
+.tile.d4{font-size:calc(var(--cell) * .265)}
+.tile.d5{font-size:calc(var(--cell) * .215)}
+.tile.v4{background:var(--t4-b);color:var(--t4-f)}
+.tile.v8{background:var(--t8-b);color:var(--t8-f)}
+.tile.v16{background:var(--t16-b);color:var(--t16-f)}
+.tile.v32{background:var(--t32-b);color:var(--t32-f)}
+.tile.v64{background:var(--t64-b);color:var(--t64-f)}
+.tile.v128{background:var(--t128-b);color:var(--t128-f)}
+.tile.v256{background:var(--t256-b);color:var(--t256-f)}
+.tile.v512{background:var(--t512-b);color:var(--t512-f)}
+.tile.v1024{background:var(--t1024-b);color:var(--t1024-f)}
+.tile.v2048{background:var(--t2048-b);color:var(--t2048-f);box-shadow:0 0 0 1px var(--t2048-b), 0 0 24px -4px var(--t2048-b)}
+.tile.vbig{background:var(--tbig-b);color:var(--tbig-f);box-shadow:0 0 0 1px var(--tbig-b), 0 0 28px -4px var(--tbig-b)}
+.tile.spawn{animation:appear .17s ease .05s both;z-index:1}
+.tile.pop{animation:pop .18s ease .09s both;z-index:2}
+.tile[data-dying]{z-index:0}
+@keyframes appear{
+  from{transform:var(--pos) scale(.35);opacity:0}
+  to{transform:var(--pos) scale(1);opacity:1}
+}
+@keyframes pop{
+  0%{transform:var(--pos) scale(.62);opacity:0}
+  55%{transform:var(--pos) scale(1.12);opacity:1}
+  100%{transform:var(--pos) scale(1);opacity:1}
+}
+
+.turnbar{display:flex;align-items:center;justify-content:center;gap:7px;padding-block:14px 6px}
+.tb{width:7px;height:7px;border-radius:50%;background:var(--line);transition:all .2s ease}
+.tb.done{background:var(--ink-3)}
+.tb.now{width:22px;border-radius:4px;background:var(--p)}
+
+/* ---------- overlay ---------- */
+.veil{
+  position:absolute;inset:0;z-index:20;
+  display:flex;flex-direction:column;justify-content:flex-start;
+  touch-action:pan-y;
+  background:var(--veil);
+  backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+  padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  overflow-y:auto;
+  animation:veilin .2s ease both;
+}
+@keyframes veilin{from{opacity:0}to{opacity:1}}
+.veil-card{
+  flex:none;margin-top:auto;
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;
+  padding:20px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;gap:16px;
+}
+.veil h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat .k{font-family:var(--font-data);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.stat .v{font-family:var(--font-data);font-variant-numeric:tabular-nums;font-size:19px;font-weight:600}
+
+/* ---------- standings ---------- */
+.board-list{display:flex;flex-direction:column;gap:8px;padding-block:4px}
+.srow{
+  display:flex;align-items:center;gap:12px;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:13px 14px;
+}
+.srow.first{border-color:var(--p);background:var(--p-wash)}
+.srow .pos{font-family:var(--font-data);font-size:13px;color:var(--ink-3);width:16px;flex:none}
+.srow.first .pos{color:var(--p-text)}
+.srow .who{flex:1;min-width:0}
+.srow .who .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srow .who .sub{font-family:var(--font-data);font-size:12px;color:var(--ink-3);margin-top:1px}
+.srow .pts{font-family:var(--font-data);font-variant-numeric:tabular-nums;font-size:20px;font-weight:600;letter-spacing:-.01em}
+
+.hero-win{padding-block:20px 12px}
+.hero-win .ttl{font-family:var(--font-num);font-size:clamp(30px,9vw,42px);font-weight:800;letter-spacing:-.03em;line-height:1.05}
+
+/* ---------- sheet ---------- */
+.sheet-list{display:flex;flex-direction:column;gap:14px}
+.step{display:flex;gap:12px}
+.step .n{
+  font-family:var(--font-data);font-size:12px;font-weight:600;
+  width:22px;height:22px;border-radius:50%;flex:none;
+  display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);
+}
+.step p{margin:0;font-size:14px;line-height:1.5}
+.step p b{font-weight:650}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+
+<!-- ============ HOME ============ -->
+<section class="screen" id="s-home">
+  <div class="head">
+    <span class="eyebrow">Cabin Match</span>
+    <span style="flex:1"></span>
+    <button class="btn ghost sm" id="theme-btn" style="width:auto;padding:0 10px" aria-label="配色を切り替える">◐</button>
+  </div>
+  <div class="scroll">
+    <div class="home-top">
+      <div class="wordmark" aria-label="2048"><span>2</span><span>0</span><span>4</span><span>8</span></div>
+      <p class="tagline">1台をまわして、同じ運で競う。<br>電波がなくても最後まで遊べる。</p>
+      <dl class="rules" id="rules">
+        <div class="rule"><dt>同じ運</dt><dd>ラウンド中は全員おなじ順にタイルが出る。引きの差は出ない。</dd></div>
+        <div class="rule"><dt>持ち回り</dt><dd>1人ずつ交代。受け渡し画面が前の人の盤面を隠す。</dd></div>
+        <div class="rule"><dt>勝敗</dt><dd>スコアで決める。同点なら手数が少ない方が上。</dd></div>
+      </dl>
+      <div class="recap" id="recap" hidden></div>
+    </div>
+  </div>
+  <div class="footer">
+    <button class="btn primary" id="go-setup">はじめる</button>
+    <button class="btn ghost" id="go-resume" hidden>中断したラウンドに戻る</button>
+    <button class="btn ghost" id="go-offline">機内で使う準備</button>
+  </div>
+</section>
+
+<!-- ============ SETUP ============ -->
+<section class="screen" id="s-setup" hidden>
+  <div class="head">
+    <button class="back" data-nav="home" aria-label="戻る">←</button>
+    <h1>メンバー</h1>
+  </div>
+  <div class="scroll">
+    <div class="plist" id="plist"></div>
+    <button class="btn sm" id="add-player" style="margin-top:10px">＋ 人を増やす</button>
+
+    <div style="height:18px"></div>
+    <div class="opt">
+      <div class="opt-txt">
+        <b>追う人に目標を見せる</b>
+        <small>2番手以降に「あと何点で抜けるか」を出す。燃える人と縮こまる人がいるので、合わなければ切る。</small>
+      </div>
+      <button class="sw" id="sw-target" role="switch" aria-checked="true" aria-label="追う人に目標を見せる"></button>
+    </div>
+    <div class="opt">
+      <div class="opt-txt">
+        <b>同じ運で競う</b>
+        <small>このラウンドは全員が同じ乱数列を引く。n手目に出る数字も、空いているマスの何番目に出るかも全員共通。盤面は打ち方で変わるが、運の良し悪しは揃う。取り消しは無し。</small>
+      </div>
+    </div>
+    <div style="height:8px"></div>
+  </div>
+  <div class="footer">
+    <button class="btn primary" id="start-round">ラウンドを始める</button>
+  </div>
+</section>
+
+<!-- ============ HANDOFF ============ -->
+<section class="screen" id="s-handoff" hidden>
+  <div class="head">
+    <span class="eyebrow" id="ho-eyebrow">Round 1</span>
+  </div>
+  <div class="ho-body">
+    <div class="ho-name" id="ho-name"></div>
+    <div class="ho-strip">
+      <span class="lab" id="ho-lab">Target</span>
+      <span class="val" id="ho-val"></span>
+    </div>
+  </div>
+  <div class="footer">
+    <button class="btn player" id="ho-start">プレイする</button>
+    <p class="note" style="text-align:center;margin:2px 0 0">端末を渡してから押す</p>
+  </div>
+</section>
+
+<!-- ============ PLAY ============ -->
+<section class="screen" id="s-play" hidden>
+  <div class="rail">
+    <div class="rail-l">
+      <div class="rail-who"><span class="dot"></span><span class="nm" id="pl-name"></span></div>
+      <div class="rail-target" id="pl-target"></div>
+    </div>
+    <div class="rail-r">
+      <div class="score num" id="pl-score">0</div>
+      <div class="score-lab">Score</div>
+    </div>
+  </div>
+  <div class="board-wrap">
+    <div class="board" id="board">
+      <div id="cells"></div>
+      <div id="tiles"></div>
+    </div>
+  </div>
+  <div class="turnbar" id="turnbar"></div>
+  <div class="footer">
+    <button class="btn ghost" id="give-up">ここでやめる</button>
+  </div>
+</section>
+
+<!-- ============ STANDINGS ============ -->
+<section class="screen" id="s-standings" hidden>
+  <div class="head">
+    <span class="eyebrow" id="st-eyebrow">Round 1</span>
+  </div>
+  <div class="scroll">
+    <div class="hero-win">
+      <div class="eyebrow" style="margin-bottom:6px">Winner</div>
+      <div class="ttl" id="st-winner"></div>
+    </div>
+    <div class="board-list" id="st-list"></div>
+    <div style="height:16px"></div>
+  </div>
+  <div class="footer">
+    <button class="btn primary" id="st-again">同じメンバーでもう1ラウンド</button>
+    <button class="btn ghost" id="st-members">メンバーを変える</button>
+    <button class="btn ghost" id="st-home">ホームへ</button>
+  </div>
+</section>
+
+<script>
+(function(){
+"use strict";
+
+/* ===================== storage ===================== */
+var K = {prefs:"cabin2048.prefs", players:"cabin2048.players", session:"cabin2048.session", history:"cabin2048.history", best:"cabin2048.best"};
+function load(k, d){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
+function save(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function drop(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+var prefs   = load(K.prefs, {theme:"dark", showTarget:true});
+var roster  = load(K.players, null);
+var history = load(K.history, []);
+var bests   = load(K.best, {});
+var session = load(K.session, null);
+
+/* ===================== palette ===================== */
+var COLORS = [
+  {hex:"#38bdf8", ink:"#04212e", wash:"rgba(56,189,248,.10)",  glow:"rgba(56,189,248,.24)"},
+  {hex:"#fb7a5c", ink:"#31100a", wash:"rgba(251,122,92,.10)",  glow:"rgba(251,122,92,.24)"},
+  {hex:"#4ade80", ink:"#052914", wash:"rgba(74,222,128,.10)",  glow:"rgba(74,222,128,.22)"},
+  {hex:"#b18cff", ink:"#1c0b3d", wash:"rgba(177,140,255,.10)", glow:"rgba(177,140,255,.26)"}
+];
+function paint(el, i){
+  var c = COLORS[i % COLORS.length];
+  el.style.setProperty("--p", c.hex);
+  el.style.setProperty("--p-ink", c.ink);
+  el.style.setProperty("--p-wash", c.wash);
+  el.style.setProperty("--p-glow", c.glow);
+  el.style.setProperty("--p-text", c.hex);
+}
+function esc(s){
+  return String(s).replace(/[&<>"]/g, function(ch){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[ch];
+  });
+}
+
+/* ===================== dom ===================== */
+function $(id){ return document.getElementById(id); }
+var SCREENS = ["home","setup","handoff","play","standings"];
+var current = "home";
+function show(name){
+  current = name;
+  for (var i=0;i<SCREENS.length;i++){
+    var el = $("s-"+SCREENS[i]);
+    el.hidden = SCREENS[i] !== name;
+  }
+  if (name === "home") paintHome();
+}
+function fmt(n){ return n.toLocaleString("ja-JP"); }
+function clock(ms){
+  var s = Math.max(0, Math.round(ms/1000));
+  return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
+}
+
+/* ===================== theme ===================== */
+function applyTheme(){
+  document.documentElement.setAttribute("data-theme", prefs.theme === "light" ? "light" : "dark");
+}
+$("theme-btn").addEventListener("click", function(){
+  prefs.theme = prefs.theme === "light" ? "dark" : "light";
+  save(K.prefs, prefs); applyTheme();
+});
+
+/* ===================== deterministic run ===================== */
+function hashSeed(str){
+  var h = 1779033703 ^ str.length;
+  for (var i=0;i<str.length;i++){
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = h << 13 | h >>> 19;
+  }
+  return (h ^ h >>> 16) >>> 0;
+}
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+/* The whole point of the match: every player in a round draws the exact same
+   stream of (which empty cell, which value) events. Board states diverge with
+   play, luck does not. */
+var EVENT_COUNT = 2600;
+function buildEvents(seed){
+  var rnd = mulberry32(seed >>> 0), out = new Array(EVENT_COUNT);
+  for (var i=0;i<EVENT_COUNT;i++){
+    out[i] = {r: rnd(), v: rnd() < 0.9 ? 2 : 4};
+  }
+  return out;
+}
+
+/* ===================== game core ===================== */
+var VEC = {up:[-1,0], down:[1,0], left:[0,-1], right:[0,1]};
+var game = null;
+var nextId = 1;
+
+function emptyGrid(){
+  var g = [];
+  for (var r=0;r<4;r++){ g.push([null,null,null,null]); }
+  return g;
+}
+function eachTile(g, fn){
+  for (var r=0;r<4;r++) for (var c=0;c<4;c++){ if (g[r][c]) fn(g[r][c], r, c); }
+}
+function emptyCells(g){
+  var out = [];
+  for (var r=0;r<4;r++) for (var c=0;c<4;c++){ if (!g[r][c]) out.push([r,c]); }
+  return out;
+}
+function spawn(G){
+  var cells = emptyCells(G.grid);
+  if (!cells.length) return null;
+  var ev = G.events[G.ei % EVENT_COUNT];
+  G.ei++;
+  var pick = cells[Math.floor(ev.r * cells.length)];
+  var t = {id: nextId++, v: ev.v, r: pick[0], c: pick[1], merged:false};
+  G.grid[pick[0]][pick[1]] = t;
+  return t;
+}
+function canMove(g){
+  for (var r=0;r<4;r++) for (var c=0;c<4;c++){
+    var t = g[r][c];
+    if (!t) return true;
+    if (c < 3 && g[r][c+1] && g[r][c+1].v === t.v) return true;
+    if (r < 3 && g[r+1][c] && g[r+1][c].v === t.v) return true;
+  }
+  return false;
+}
+function applyMove(G, dir){
+  var d = VEC[dir], dr = d[0], dc = d[1];
+  var rows = [0,1,2,3], cols = [0,1,2,3];
+  if (dr > 0) rows = rows.slice().reverse();
+  if (dc > 0) cols = cols.slice().reverse();
+
+  eachTile(G.grid, function(t){ t.from = {r:t.r, c:t.c}; t.merged = false; });
+
+  var moved = false, gained = 0, ghosts = [], top = 0;
+
+  for (var i=0;i<4;i++) for (var j=0;j<4;j++){
+    var r = rows[i], c = cols[j];
+    var t = G.grid[r][c];
+    if (!t) continue;
+    var nr = r, nc = c;
+    while (nr+dr >= 0 && nr+dr < 4 && nc+dc >= 0 && nc+dc < 4 && !G.grid[nr+dr][nc+dc]){ nr += dr; nc += dc; }
+    var tr = nr + dr, tc = nc + dc;
+    var target = (tr >= 0 && tr < 4 && tc >= 0 && tc < 4) ? G.grid[tr][tc] : null;
+
+    if (target && target.v === t.v && !target.merged){
+      G.grid[r][c] = null;
+      var mv = t.v * 2;
+      var m = {id: nextId++, v: mv, r: tr, c: tc, merged: true, isNew: true};
+      G.grid[tr][tc] = m;
+      ghosts.push({id: t.id, v: t.v, r: tr, c: tc});
+      ghosts.push({id: target.id, v: target.v, r: tr, c: tc});
+      gained += mv; moved = true;
+      if (mv > top) top = mv;
+    } else if (nr !== r || nc !== c){
+      G.grid[r][c] = null;
+      G.grid[nr][nc] = t;
+      t.r = nr; t.c = nc;
+      moved = true;
+    }
+  }
+  return {moved:moved, gained:gained, ghosts:ghosts, top:top};
+}
+function maxTile(g){
+  var m = 0;
+  eachTile(g, function(t){ if (t.v > m) m = t.v; });
+  return m;
+}
+
+/* ===================== board rendering ===================== */
+var cellsEl = $("cells"), tilesEl = $("tiles");
+(function(){
+  for (var i=0;i<16;i++){ cellsEl.appendChild(document.createElement("div")); }
+})();
+var els = {};   /* tile id -> element */
+
+function tileClass(v){
+  var cls = "tile v" + v + " d" + String(v).length;
+  if (v > 2048) cls = "tile vbig d" + String(v).length;
+  return cls;
+}
+function place(el, r, c){
+  el.style.setProperty("--r", r);
+  el.style.setProperty("--c", c);
+}
+function makeEl(t){
+  var el = document.createElement("div");
+  el.className = tileClass(t.v);
+  el.textContent = t.v;
+  place(el, t.r, t.c);
+  tilesEl.appendChild(el);
+  els[t.id] = el;
+  return el;
+}
+function flushDying(){
+  for (var id in els){
+    var el = els[id];
+    if (el.dataset.dying){ el.remove(); delete els[id]; }
+  }
+}
+function renderBoard(res){
+  /* A fast player must never lose a swipe: anything still animating from the
+     previous move is dropped on the floor rather than blocking this one. */
+  flushDying();
+
+  var alive = {};
+  eachTile(game.grid, function(t){ alive[t.id] = t; });
+
+  if (res && res.ghosts.length){
+    for (var i=0;i<res.ghosts.length;i++){
+      var g = res.ghosts[i];
+      var el = els[g.id];
+      if (!el){ el = makeEl({id:g.id, v:g.v, r:g.r, c:g.c}); }
+      el.dataset.dying = "1";
+      /* force a frame so the slide to the merge point is seen */
+      void el.offsetWidth;
+      place(el, g.r, g.c);
+    }
+    setTimeout(flushDying, 220);
+  }
+
+  for (var id in els){
+    if (!alive[id] && !els[id].dataset.dying){ els[id].remove(); delete els[id]; }
+  }
+  eachTile(game.grid, function(t){
+    var el = els[t.id];
+    if (!el){
+      el = makeEl(t);
+      var anim = t.isNew ? "pop" : "spawn";
+      el.classList.add(anim);
+      /* drop the class once it has played: a lingering filled animation would
+         override the slide transition and make later moves jump */
+      (function(node){
+        node.addEventListener("animationend", function(){ node.classList.remove("pop","spawn"); }, {once:true});
+      })(el);
+      t.isNew = false;
+      return;
+    }
+    if (el.textContent != t.v) el.textContent = t.v;
+    place(el, t.r, t.c);
+  });
+}
+function clearBoard(){
+  tilesEl.innerHTML = "";
+  els = {};
+}
+
+/* ===================== round flow ===================== */
+function newSession(players){
+  return {
+    round: 1,
+    seed: hashSeed(String(Date.now()) + ":" + players.map(function(p){return p.name}).join("|")),
+    players: players,
+    idx: 0,
+    results: [],
+    live: null
+  };
+}
+function persist(){ if (session) save(K.session, session); else drop(K.session); }
+
+function targetScore(){
+  if (!session.results.length) return null;
+  var best = session.results[0];
+  for (var i=1;i<session.results.length;i++){ if (session.results[i].score > best.score) best = session.results[i]; }
+  return best;
+}
+
+function toHandoff(){
+  var p = session.players[session.idx];
+  paint($("s-handoff"), session.idx);
+  $("ho-eyebrow").textContent = "Round " + session.round + " · " + (session.idx+1) + " / " + session.players.length;
+  $("ho-name").innerHTML = "";
+  var nm = document.createTextNode(p.name);
+  $("ho-name").appendChild(nm);
+  var em = document.createElement("em");
+  em.textContent = " の番";
+  $("ho-name").appendChild(em);
+
+  var t = targetScore();
+  if (t && prefs.showTarget){
+    $("ho-lab").textContent = "抜く相手";
+    $("ho-val").innerHTML = esc(t.name) + " の <span class=\"n\">" + fmt(t.score) + "</span> 点";
+  } else if (t){
+    $("ho-lab").textContent = "順番";
+    $("ho-val").textContent = session.players.length - session.idx + " 人が残っている";
+  } else if (bests[p.name]){
+    $("ho-lab").textContent = "自己ベスト";
+    $("ho-val").innerHTML = "<span class=\"n\">" + fmt(bests[p.name]) + "</span> 点";
+  } else {
+    $("ho-lab").textContent = "先攻";
+    $("ho-val").textContent = "基準をつくる番";
+  }
+  show("handoff");
+}
+
+function beginTurn(resume){
+  var p = session.players[session.idx];
+  paint($("s-play"), session.idx);
+  clearBoard();
+
+  if (resume && session.live){
+    var L = session.live;
+    game = {
+      grid: emptyGrid(),
+      events: buildEvents(session.seed + session.round),
+      ei: L.ei, score: L.score, moves: L.moves,
+      elapsed: L.elapsed, startedAt: Date.now(),
+      over: false, hit2048: L.hit2048
+    };
+    for (var r=0;r<4;r++) for (var c=0;c<4;c++){
+      var v = L.grid[r][c];
+      if (v) game.grid[r][c] = {id: nextId++, v: v, r: r, c: c, merged: false};
+    }
+  } else {
+    game = {
+      grid: emptyGrid(),
+      events: buildEvents(session.seed + session.round),
+      ei: 0, score: 0, moves: 0,
+      elapsed: 0, startedAt: Date.now(),
+      over: false, hit2048: false
+    };
+    spawn(game); spawn(game);
+  }
+
+  $("pl-name").textContent = p.name;
+  renderBoard(null);
+  paintRail();
+  paintTurnbar();
+  disarmQuit();
+  saveLive();
+  show("play");
+}
+
+function paintRail(){
+  $("pl-score").textContent = fmt(game.score);
+  var el = $("pl-target");
+  var t = targetScore();
+  if (!prefs.showTarget || !t){
+    el.textContent = "";
+    el.classList.remove("ahead");
+    return;
+  }
+  var diff = t.score - game.score;
+  if (diff > 0){
+    el.classList.remove("ahead");
+    el.innerHTML = esc(t.name) + " まで あと <b>" + fmt(diff) + "</b>";
+  } else {
+    el.classList.add("ahead");
+    el.innerHTML = esc(t.name) + " を <b>+" + fmt(-diff) + "</b> で抜いている";
+  }
+}
+function paintTurnbar(){
+  var bar = $("turnbar");
+  bar.innerHTML = "";
+  for (var i=0;i<session.players.length;i++){
+    var d = document.createElement("span");
+    d.className = "tb" + (i < session.idx ? " done" : i === session.idx ? " now" : "");
+    bar.appendChild(d);
+  }
+}
+function saveLive(){
+  var g = [];
+  for (var r=0;r<4;r++){
+    var row = [];
+    for (var c=0;c<4;c++){ row.push(game.grid[r][c] ? game.grid[r][c].v : 0); }
+    g.push(row);
+  }
+  session.live = {
+    grid: g, ei: game.ei, score: game.score, moves: game.moves,
+    elapsed: game.elapsed + (Date.now() - game.startedAt),
+    hit2048: game.hit2048
+  };
+  persist();
+}
+
+function doMove(dir){
+  if (!game || game.over) return;
+  var res = applyMove(game, dir);
+  if (!res.moved) return;           /* a dead swipe burns no luck */
+  game.score += res.gained;
+  game.moves++;
+  var born = spawn(game);
+  if (born) born.isNew = false;
+  renderBoard(res);
+  paintRail();
+  saveLive();
+
+  if (res.top >= 2048 && !game.hit2048){
+    game.hit2048 = true;
+    setTimeout(function(){ celebrate(); }, 260);
+    return;
+  }
+  if (!canMove(game.grid)){
+    game.over = true;
+    setTimeout(function(){ finishTurn(false); }, 300);
+  }
+}
+
+/* ===================== overlays ===================== */
+function overlay(html, wire){
+  var v = document.createElement("div");
+  v.className = "veil";
+  v.innerHTML = "<div class=\"veil-card\">" + html + "</div>";
+  $("s-" + current).appendChild(v);
+  wire(v, function(){ v.remove(); });
+  return v;
+}
+function statBlock(){
+  return "<div class=\"stats\">" +
+    "<div class=\"stat\"><span class=\"k\">Score</span><span class=\"v\">" + fmt(game.score) + "</span></div>" +
+    "<div class=\"stat\"><span class=\"k\">Max</span><span class=\"v\">" + maxTile(game.grid) + "</span></div>" +
+    "<div class=\"stat\"><span class=\"k\">Moves</span><span class=\"v\">" + game.moves + "</span></div>" +
+  "</div>";
+}
+function celebrate(){
+  overlay(
+    "<h2>2048、到達</h2>" +
+    "<p class=\"note\" style=\"margin:-8px 0 0\">ここで止めても、伸ばしに行ってもいい。</p>" +
+    statBlock() +
+    "<button class=\"btn primary\" data-go=\"on\">続ける</button>" +
+    "<button class=\"btn ghost\" data-go=\"stop\">ここで終える</button>",
+    function(v, close){
+      v.addEventListener("click", function(e){
+        var b = e.target.closest("[data-go]");
+        if (!b) return;
+        close();
+        if (b.dataset.go === "stop") finishTurn(true);
+      });
+    }
+  );
+}
+function finishTurn(voluntary){
+  game.over = true;
+  var elapsed = game.elapsed + (Date.now() - game.startedAt);
+  var p = session.players[session.idx];
+  var rec = {name: p.name, color: session.idx, score: game.score, max: maxTile(game.grid), moves: game.moves, ms: elapsed, gaveUp: !!voluntary};
+
+  var title = voluntary ? "おつかれさま" : "手が尽きた";
+  var last = session.idx === session.players.length - 1;
+
+  overlay(
+    "<h2>" + title + "</h2>" +
+    "<div class=\"stats\">" +
+      "<div class=\"stat\"><span class=\"k\">Score</span><span class=\"v\">" + fmt(rec.score) + "</span></div>" +
+      "<div class=\"stat\"><span class=\"k\">Max</span><span class=\"v\">" + rec.max + "</span></div>" +
+      "<div class=\"stat\"><span class=\"k\">Time</span><span class=\"v\">" + clock(rec.ms) + "</span></div>" +
+    "</div>" +
+    "<button class=\"btn primary\" data-next=\"1\">" + (last ? "結果を見る" : "次の人へ") + "</button>",
+    function(v, close){
+      v.addEventListener("click", function(e){
+        if (!e.target.closest("[data-next]")) return;
+        close();
+        session.results.push(rec);
+        if (!bests[rec.name] || rec.score > bests[rec.name]){ bests[rec.name] = rec.score; save(K.best, bests); }
+        session.live = null;
+        session.idx++;
+        if (session.idx >= session.players.length){ endRound(); }
+        else { persist(); toHandoff(); }
+      });
+    }
+  );
+}
+
+/* ===================== standings ===================== */
+function rankOf(list){
+  return list.slice().sort(function(a,b){
+    if (b.score !== a.score) return b.score - a.score;
+    return a.moves - b.moves;            /* same score, fewer moves wins */
+  });
+}
+function endRound(){
+  var ranked = rankOf(session.results);
+  history.unshift({ts: Date.now(), round: session.round, results: ranked});
+  history = history.slice(0, 20);
+  save(K.history, history);
+
+  paint($("s-standings"), ranked[0].color);
+  $("st-eyebrow").textContent = "Round " + session.round + " · 結果";
+  $("st-winner").textContent = ranked[0].name;
+
+  var list = $("st-list");
+  list.innerHTML = "";
+  for (var i=0;i<ranked.length;i++){
+    var r = ranked[i];
+    var row = document.createElement("div");
+    row.className = "srow" + (i === 0 ? " first" : "");
+    paint(row, r.color);
+    row.innerHTML =
+      "<span class=\"pos\">" + (i+1) + "</span>" +
+      "<span class=\"dot\"></span>" +
+      "<span class=\"who\"><span class=\"nm\"></span>" +
+      "<span class=\"sub\">最大 " + r.max + " · " + r.moves + "手 · " + clock(r.ms) + (r.gaveUp && r.max < 2048 ? " · 途中終了" : "") + "</span></span>" +
+      "<span class=\"pts\">" + fmt(r.score) + "</span>";
+    row.querySelector(".nm").textContent = r.name;
+    list.appendChild(row);
+  }
+  session.live = null;
+  persist();
+  show("standings");
+}
+
+/* ===================== home recap ===================== */
+function paintHome(){
+  var box = $("recap");
+  $("rules").hidden = history.length > 0;   /* the rules give way to the scores */
+  if (!history.length){ box.hidden = true; }
+  else {
+    var h = history[0];
+    box.hidden = false;
+    box.innerHTML = "";
+    var lab = document.createElement("div");
+    lab.className = "eyebrow";
+    lab.style.marginBottom = "4px";
+    lab.textContent = "前回 Round " + h.round;
+    box.appendChild(lab);
+    for (var i=0;i<h.results.length;i++){
+      var r = h.results[i];
+      var row = document.createElement("div");
+      row.className = "recap-row" + (i === 0 ? " win" : "");
+      paint(row, r.color);
+      row.innerHTML = "<span class=\"rank\">" + (i+1) + "</span><span class=\"dot\"></span><span class=\"nm\"></span><span class=\"sc\">" + fmt(r.score) + "</span>";
+      row.querySelector(".nm").textContent = r.name;
+      box.appendChild(row);
+    }
+  }
+  $("go-resume").hidden = !(session && session.players && session.idx < session.players.length);
+}
+
+/* ===================== setup screen ===================== */
+var draft = [];
+function paintSetup(){
+  var list = $("plist");
+  list.innerHTML = "";
+  for (var i=0;i<draft.length;i++){
+    (function(i){
+      var row = document.createElement("div");
+      row.className = "prow";
+      paint(row, i);
+      row.innerHTML = "<span class=\"dot\"></span>" +
+        "<input id=\"p" + i + "\" type=\"text\" maxlength=\"10\" autocomplete=\"off\" autocapitalize=\"off\" spellcheck=\"false\" placeholder=\"プレイヤー " + (i+1) + "\">" +
+        (draft.length > 2 ? "<button class=\"del\" aria-label=\"削除\">×</button>" : "");
+      var inp = row.querySelector("input");
+      inp.value = draft[i];
+      inp.addEventListener("input", function(){ draft[i] = inp.value; });
+      var del = row.querySelector(".del");
+      if (del) del.addEventListener("click", function(){ draft.splice(i,1); paintSetup(); });
+      list.appendChild(row);
+    })(i);
+  }
+  $("add-player").hidden = draft.length >= 4;
+  $("sw-target").setAttribute("aria-checked", prefs.showTarget ? "true" : "false");
+}
+$("add-player").addEventListener("click", function(){ if (draft.length < 4){ draft.push(""); paintSetup(); } });
+$("sw-target").addEventListener("click", function(){
+  prefs.showTarget = !prefs.showTarget;
+  save(K.prefs, prefs);
+  $("sw-target").setAttribute("aria-checked", prefs.showTarget ? "true" : "false");
+});
+$("go-setup").addEventListener("click", function(){
+  draft = roster && roster.length >= 2 ? roster.slice() : ["",""];
+  paintSetup();
+  show("setup");
+});
+$("start-round").addEventListener("click", function(){
+  var players = [];
+  for (var i=0;i<draft.length;i++){
+    var n = (draft[i] || "").trim();
+    players.push({name: n || ("プレイヤー " + (i+1))});
+  }
+  roster = players.map(function(p){ return p.name; });
+  save(K.players, roster);
+  session = newSession(players);
+  persist();
+  toHandoff();
+});
+document.addEventListener("click", function(e){
+  var b = e.target.closest("[data-nav]");
+  if (b) show(b.dataset.nav);
+});
+
+/* ===================== round buttons ===================== */
+$("ho-start").addEventListener("click", function(){ beginTurn(!!session.live); });
+$("go-resume").addEventListener("click", function(){
+  if (session.live) beginTurn(true); else toHandoff();
+});
+$("st-again").addEventListener("click", function(){
+  session = {
+    round: session.round + 1,
+    seed: hashSeed(String(session.seed) + ":" + session.round + ":" + Date.now()),
+    players: session.players,
+    idx: 0, results: [], live: null
+  };
+  persist();
+  toHandoff();
+});
+$("st-members").addEventListener("click", function(){
+  draft = roster ? roster.slice() : ["",""];
+  paintSetup();
+  session = null; persist();
+  show("setup");
+});
+$("st-home").addEventListener("click", function(){
+  session = null; persist();
+  show("home");
+});
+
+/* two-step quit — a browser confirm() would freeze the page on some devices */
+var quitTimer = null;
+function disarmQuit(){
+  var b = $("give-up");
+  b.classList.remove("armed");
+  b.textContent = "ここでやめる";
+  if (quitTimer){ clearTimeout(quitTimer); quitTimer = null; }
+}
+$("give-up").addEventListener("click", function(){
+  var b = $("give-up");
+  if (b.classList.contains("armed")){ disarmQuit(); finishTurn(true); return; }
+  b.classList.add("armed");
+  b.textContent = "もう一度押すと終了";
+  quitTimer = setTimeout(disarmQuit, 3000);
+});
+
+/* ===================== input ===================== */
+var THRESHOLD = 18;
+var start = null;
+var play = $("s-play");
+
+play.addEventListener("touchstart", function(e){
+  if (e.target.closest("button")) return;
+  if (e.touches.length !== 1){ start = null; return; }
+  var t = e.touches[0];
+  start = {x: t.clientX, y: t.clientY};
+}, {passive:true});
+
+play.addEventListener("touchmove", function(e){
+  if (start) e.preventDefault();
+}, {passive:false});
+
+play.addEventListener("touchend", function(e){
+  if (!start) return;
+  var t = e.changedTouches[0];
+  var dx = t.clientX - start.x, dy = t.clientY - start.y;
+  start = null;
+  if (Math.abs(dx) < THRESHOLD && Math.abs(dy) < THRESHOLD) return;
+  if (Math.abs(dx) > Math.abs(dy)) doMove(dx > 0 ? "right" : "left");
+  else doMove(dy > 0 ? "down" : "up");
+}, {passive:true});
+
+play.addEventListener("touchcancel", function(){ start = null; }, {passive:true});
+
+/* pointer drag keeps it playable on a trackpad while we build it */
+var pdown = null;
+play.addEventListener("pointerdown", function(e){
+  if (e.pointerType === "touch" || e.target.closest("button")) return;
+  pdown = {x: e.clientX, y: e.clientY};
+});
+play.addEventListener("pointerup", function(e){
+  if (!pdown) return;
+  var dx = e.clientX - pdown.x, dy = e.clientY - pdown.y;
+  pdown = null;
+  if (Math.abs(dx) < THRESHOLD && Math.abs(dy) < THRESHOLD) return;
+  if (Math.abs(dx) > Math.abs(dy)) doMove(dx > 0 ? "right" : "left");
+  else doMove(dy > 0 ? "down" : "up");
+});
+
+var KEYS = {ArrowLeft:"left", ArrowRight:"right", ArrowUp:"up", ArrowDown:"down",
+            a:"left", d:"right", w:"up", s:"down", h:"left", l:"right", k:"up", j:"down"};
+document.addEventListener("keydown", function(e){
+  if (current !== "play") return;
+  if (e.target.tagName === "INPUT") return;
+  var dir = KEYS[e.key];
+  if (!dir) return;
+  e.preventDefault();
+  doMove(dir);
+});
+
+/* iOS: kill pinch-zoom and the double-tap zoom that eats fast swipes */
+document.addEventListener("gesturestart", function(e){ e.preventDefault(); });
+document.addEventListener("dblclick", function(e){
+  if (e.target.tagName !== "INPUT") e.preventDefault();
+});
+
+/* the cabin light goes off mid-round: bank the clock */
+document.addEventListener("visibilitychange", function(){
+  if (!game || game.over || current !== "play") return;
+  if (document.hidden){
+    game.elapsed += Date.now() - game.startedAt;
+    game.startedAt = Date.now();   /* banked: don't let saveLive count it twice */
+    saveLive();
+  } else {
+    game.startedAt = Date.now();
+  }
+});
+
+/* ===================== offline sheet ===================== */
+$("go-offline").addEventListener("click", function(){
+  overlay(
+    "<h2>機内で使う準備</h2>" +
+    "<div class=\"sheet-list\">" +
+      "<div class=\"step\"><span class=\"n\">1</span><p>配布版をSafariで開き、共有ボタンから<b>「ホーム画面に追加」</b>。ブラウザのタブのままだと機内で開けないことがある。</p></div>" +
+      "<div class=\"step\"><span class=\"n\">2</span><p>追加した<b>アイコンから一度起動</b>する。この初回起動で、遊ぶのに必要なものが端末に焼き付く。</p></div>" +
+      "<div class=\"step\"><span class=\"n\">3</span><p>搭乗前に<b>機内モードをONにして、もう一度アイコンから起動</b>。ここまで確認できて初めて安心していい。</p></div>" +
+    "</div>" +
+    "<p class=\"note\" style=\"margin:0\">スコアとメンバーはこの端末の中にだけ残る。ブラウザの履歴やサイトデータを消すと一緒に消える。</p>" +
+    "<button class=\"btn primary\" data-close=\"1\">わかった</button>",
+    function(v, close){
+      v.addEventListener("click", function(e){ if (e.target.closest("[data-close]")) close(); });
+    }
+  );
+});
+
+/* ===================== boot ===================== */
+applyTheme();
+if (session && !(session.players && session.idx < session.players.length)){
+  session = null; persist();   /* a finished round is not something to resume */
+}
+show("home");
+})();
+</script>
+<!-- shared:end -->
+
+<script>
+/* Without this the game is just a web page: the worker is what puts it on the
+   device. Registration failing is not fatal - the page still plays online. */
+if ("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(){});
+  });
+}
+</script>
+</html>
