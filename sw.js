@@ -5,7 +5,7 @@
  * revalidation that would stall for the length of an airline DNS timeout.
  * The cost is that a new build only lands when CACHE_VERSION changes below,
  * so bump it on every deploy. */
-var CACHE_VERSION = "cabin2048-v2";
+var CACHE_VERSION = "cabin2048-v3";
 
 var ASSETS = [
   "./",

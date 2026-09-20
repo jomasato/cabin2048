@@ -50,6 +50,9 @@
 
   --c1-b:#4aa3e0;   --c1-f:#ffffff;
   --c2-b:#e8624a;   --c2-f:#ffffff;
+  --n1:#2f7fbf; --n2:#17868b; --n3:#35804a; --n4:#73791f;
+  --n5:#a86d18; --n6:#b04a29; --n7:#9c3568; --n-f:#ffffff;
+  --gk:#b9c2cf;  --gkc:#98a4b4;
   --t2-b:#dfe5ee;   --t2-f:#54606f;
   --t4-b:#c9d4e4;   --t4-f:#3f4c5c;
   --t8-b:#7fd3e0;   --t8-f:#0b3b44;
@@ -87,6 +90,9 @@
 
     --c1-b:#2f7fc4;   --c1-f:#eaf5ff;
     --c2-b:#c9452f;   --c2-f:#ffeeea;
+    --n1:#3580c4; --n2:#23848a; --n3:#3a8850; --n4:#7b812e;
+    --n5:#b0762a; --n6:#cc5f3e; --n7:#b8467f; --n-f:#f4f8fd;
+    --gk:#4a5666;  --gkc:#74839a;
     --t2-b:#2b3442;   --t2-f:#93a3b8;
     --t4-b:#36435a;   --t4-f:#b6c6da;
     --t8-b:#1f5f6e;   --t8-f:#d6f2f7;
@@ -119,6 +125,9 @@
 
   --c1-b:#2f7fc4;   --c1-f:#eaf5ff;
   --c2-b:#c9452f;   --c2-f:#ffeeea;
+  --n1:#3580c4; --n2:#23848a; --n3:#3a8850; --n4:#7b812e;
+  --n5:#b0762a; --n6:#cc5f3e; --n7:#b8467f; --n-f:#f4f8fd;
+  --gk:#4a5666;  --gkc:#74839a;
   --t2-b:#2b3442;   --t2-f:#93a3b8;
   --t4-b:#36435a;   --t4-f:#b6c6da;
   --t8-b:#1f5f6e;   --t8-f:#d6f2f7;
@@ -322,8 +331,8 @@ input{font:inherit}
 }
 #cells{
   display:grid;
-  grid-template-columns:repeat(4,var(--cell));
-  grid-template-rows:repeat(4,var(--cell));
+  grid-template-columns:repeat(var(--n,4),var(--cell));
+  grid-template-rows:repeat(var(--n,4),var(--cell));
   gap:var(--gap);
 }
 #cells div{background:var(--cellbg);border-radius:9px}
@@ -407,6 +416,41 @@ input{font:inherit}
 .seg-b[aria-checked="true"]{border-color:var(--accent);background:var(--panel)}
 .seg-b[aria-checked="true"] b{color:var(--accent)}
 .seg-b[aria-checked="true"] small{color:var(--ink-2)}
+
+/* ---------- 7×7 ---------- */
+/* A wider board on the same screen: tighter gaps, and the chrome has to give
+   back the height the extra three rows cost. */
+#s-play[data-grid="7"]{
+  --n:7;
+  --gap:clamp(4px,1.5vw,7px);
+  --boardw:min(calc(100vw - 32px), calc(100dvh - 296px), 420px);
+  --cell:calc((var(--boardw) - var(--pad)*2 - var(--gap)*6) / 7);
+}
+@supports not (height:100dvh){
+  #s-play[data-grid="7"]{--boardw:min(calc(100vw - 32px), calc(100vh - 296px), 420px)}
+}
+/* discs are round, blocks are square - shape carries the difference even
+   before you read the number */
+#s-play[data-grid="7"] #cells div{border-radius:50%}
+#s-play[data-grid="7"] .tile{border-radius:50%;font-weight:700}
+#s-play[data-grid="7"] .tile.gk,
+#s-play[data-grid="7"] .tile.gkc{border-radius:7px}
+.tile.n1{background:var(--n1);color:var(--n-f)}
+.tile.n2{background:var(--n2);color:var(--n-f)}
+.tile.n3{background:var(--n3);color:var(--n-f)}
+.tile.n4{background:var(--n4);color:var(--n-f)}
+.tile.n5{background:var(--n5);color:var(--n-f)}
+.tile.n6{background:var(--n6);color:var(--n-f)}
+.tile.n7{background:var(--n7);color:var(--n-f)}
+.tile.gk{background:var(--gk);color:transparent}
+.tile.gkc{background:var(--gkc);color:transparent;box-shadow:inset 0 0 0 3px rgba(255,255,255,.16)}
+
+.rise{
+  text-align:center;padding-top:11px;
+  font-family:var(--font-data);font-size:12px;letter-spacing:.04em;
+  color:var(--ink-3);
+}
+.rise.soon{color:var(--t1024-b)}
 
 .turnbar{display:flex;align-items:center;justify-content:center;gap:7px;padding-block:14px 6px}
 .tb{width:7px;height:7px;border-radius:50%;background:var(--line);transition:all .2s ease}
@@ -511,6 +555,9 @@ input{font:inherit}
       <button class="seg-b" id="mode-123" role="radio" aria-checked="false">
         <b>1·2·3</b><small>1と2で3。次に来る札が見えるぶん、運ではなく計画の勝負になる</small>
       </button>
+      <button class="seg-b" id="mode-drop7" role="radio" aria-checked="false">
+        <b>7×7</b><small>数字を列に落とす。同じ行か列がその数だけ埋まると消える。連鎖が主役</small>
+      </button>
     </div>
     <div class="plist" id="plist"></div>
     <button class="btn sm" id="add-player" style="margin-top:10px">＋ 人を増やす</button>
@@ -576,6 +623,7 @@ input{font:inherit}
       <div id="tiles"></div>
     </div>
   </div>
+  <div class="rise" id="pl-rise" hidden></div>
   <div class="turnbar" id="turnbar"></div>
   <div class="footer">
     <button class="btn ghost" id="give-up">ここでやめる</button>
@@ -720,13 +768,18 @@ var VEC = {up:[-1,0], down:[1,0], left:[0,-1], right:[0,1]};
 var game = null;
 var nextId = 1;
 
+var GN = 4;   /* side of the current board: 4 for the sliding rules, 7 for 7×7 */
 function emptyGrid(){
   var g = [];
-  for (var r=0;r<4;r++){ g.push([null,null,null,null]); }
+  for (var r=0;r<GN;r++){
+    var row = [];
+    for (var c=0;c<GN;c++) row.push(null);
+    g.push(row);
+  }
   return g;
 }
 function eachTile(g, fn){
-  for (var r=0;r<4;r++) for (var c=0;c<4;c++){ if (g[r][c]) fn(g[r][c], r, c); }
+  for (var r=0;r<GN;r++) for (var c=0;c<GN;c++){ if (g[r][c]) fn(g[r][c], r, c); }
 }
 function emptyCells(g){
   var out = [];
@@ -921,10 +974,145 @@ var CLS123 = {1:"c1", 2:"c2", 3:"v3", 6:"v4", 12:"v8", 24:"v16", 48:"v32",
               96:"v64", 192:"v128", 384:"v256", 768:"v512", 1536:"v1024",
               3072:"v2048", 6144:"vbig"};
 
-/* ===================== the two rule sets ===================== */
+/* ===================== 7×7 core ===================== */
+/* A disc leaves the board when the number of filled cells in its row, or in
+   its column, equals the number written on it. Blocks count towards those
+   totals but never clear themselves - they only crack open. Everything
+   interesting comes from what the collapse after a clear sets up next. */
+var D7 = 7;
+/* Tuned for a 3-5 minute round rather than copied from anywhere: one row to
+   start so there is something to crack from move one, then a row every 14
+   drops. Passive play suffocates around 80 drops; clearing next to blocks
+   buys back room, so the ceiling is a skill question. */
+var RISE_EVERY = 14;
+var START_ROWS = 1;
+
+function eventsDrop7(seed){
+  var rnd = mulberry32(seed >>> 0), out = new Array(EVENT_COUNT);
+  for (var i=0;i<EVENT_COUNT;i++){
+    var rev = [];
+    for (var k=0;k<8;k++) rev.push(1 + Math.floor(rnd() * 7));
+    out[i] = {disc: 1 + Math.floor(rnd() * 7), rev: rev};
+  }
+  return out;
+}
+/* Reveals are keyed to WHEN they happen, not to how many have happened, so two
+   players who crack a block open on the same drop see the same number even
+   though they have cracked different amounts up to that point. */
+function revealAt(G, ordinal){
+  var ev = G.events[G.drops % EVENT_COUNT];
+  return ev.rev[ordinal % ev.rev.length];
+}
+function blockRow(G, r){
+  for (var c=0;c<D7;c++) G.grid[r][c] = {id: nextId++, v: 0, r: r, c: c};
+}
+function beginDrop7(G){
+  for (var i=0;i<START_ROWS;i++) blockRow(G, D7 - 1 - i);
+}
+function peekDrop7(G){ return G.events[G.drops % EVENT_COUNT].disc; }
+
+function gravity(G){
+  for (var c=0;c<D7;c++){
+    var stack = [];
+    for (var r=0;r<D7;r++){ if (G.grid[r][c]) stack.push(G.grid[r][c]); }
+    for (var r2=D7-1, k=stack.length-1; r2>=0; r2--, k--){
+      var t = k >= 0 ? stack[k] : null;
+      G.grid[r2][c] = t;
+      if (t){ t.r = r2; t.c = c; }
+    }
+  }
+}
+function resolve(G, ghosts){
+  var waves = 0, gained = 0, ordinal = 0;
+  while (true){
+    var rows = [], cols = [];
+    for (var i=0;i<D7;i++){ rows.push(0); cols.push(0); }
+    eachTile(G.grid, function(t, r, c){ rows[r]++; cols[c]++; });
+
+    var hits = [];
+    for (var r=0;r<D7;r++) for (var c=0;c<D7;c++){
+      var t = G.grid[r][c];
+      if (t && t.v >= 1 && (rows[r] === t.v || cols[c] === t.v)) hits.push([r,c]);
+    }
+    if (!hits.length) break;
+    waves++;
+
+    /* blocks touching a clear are found before anything is removed, and each
+       one reacts at most once per wave */
+    var touched = {};
+    var DR = [[-1,0],[1,0],[0,-1],[0,1]];
+    for (var h=0;h<hits.length;h++){
+      for (var k=0;k<4;k++){
+        var nr = hits[h][0] + DR[k][0], nc = hits[h][1] + DR[k][1];
+        if (nr < 0 || nr >= D7 || nc < 0 || nc >= D7) continue;
+        var nb = G.grid[nr][nc];
+        if (nb && nb.v <= 0) touched[nr + ":" + nc] = true;
+      }
+    }
+    for (var h2=0;h2<hits.length;h2++){
+      var p = hits[h2], gt = G.grid[p[0]][p[1]];
+      ghosts.push({id: gt.id, v: gt.v, r: p[0], c: p[1]});
+      G.grid[p[0]][p[1]] = null;
+    }
+    for (var key in touched){
+      var pp = key.split(":"), br = +pp[0], bc = +pp[1], b = G.grid[br][bc];
+      if (!b) continue;
+      if (b.v === 0){
+        b.v = -1;                                   /* cracks */
+      } else {
+        G.grid[br][bc] = {id: nextId++, v: revealAt(G, ordinal++), r: br, c: bc, isNew: true};
+      }
+    }
+
+    /* quadratic in the size of the wave, multiplied by how deep the chain got */
+    gained += 7 * hits.length * hits.length * waves;
+    gravity(G);
+  }
+  return {waves: waves, gained: gained};
+}
+function moveDrop7(G, col){
+  var landing = -1;
+  for (var r=D7-1;r>=0;r--){ if (!G.grid[r][col]){ landing = r; break; } }
+  if (landing < 0) return {moved:false, ghosts:[], top:0};   /* full column: no drop, no cost */
+
+  eachTile(G.grid, function(t){ t.from = {r:t.r, c:t.c}; });
+  var ghosts = [];
+  G.grid[landing][col] = {id: nextId++, v: peekDrop7(G), r: landing, c: col, isNew: true};
+  var out = resolve(G, ghosts);
+  G.acc += out.gained;
+  G.drops++;
+
+  if (G.drops % RISE_EVERY === 0){
+    var blocked = false;
+    for (var c2=0;c2<D7;c2++){ if (G.grid[0][c2]) blocked = true; }
+    if (blocked){
+      G.dead = true;
+    } else {
+      for (var r2=0;r2<D7-1;r2++) for (var c3=0;c3<D7;c3++){
+        var t = G.grid[r2+1][c3];
+        G.grid[r2][c3] = t;
+        if (t) t.r = r2;
+      }
+      blockRow(G, D7 - 1);
+      var again = resolve(G, ghosts);   /* the rise changes every count */
+      G.acc += again.gained;
+      if (again.waves > out.waves) out.waves = again.waves;
+    }
+  }
+  if (out.waves > G.bestChain) G.bestChain = out.waves;
+  return {moved:true, ghosts:ghosts, top: out.waves >= 3 ? out.waves : 0};
+}
+function overDrop7(G){
+  if (G.dead) return true;
+  for (var c=0;c<D7;c++){ if (!G.grid[0][c]) return false; }
+  return true;
+}
+
+/* ===================== the rule sets ===================== */
 var MODES = {
   "2048": {
     name: "2048",
+    size: 4,
     preview: false,
     events: events2048,
     begin: function(G){ spawn(G); spawn(G); },
@@ -938,29 +1126,59 @@ var MODES = {
     score: function(G){ return G.acc; },
     over: function(G){ return !canMove(G.grid); },
     cls: function(v){ return (v > 2048 ? "vbig" : "v" + v) + " d" + String(v).length; },
+    label: function(v){ return v; },
+    stat2: function(G){ return ["Max", maxTile(G.grid)]; },
+    summary: function(r){ return "最大 " + r.stat; },
     milestones: [2048],
     celebrate: "ask"
   },
   "123": {
     name: "1·2·3",
+    size: 4,
     preview: true,
+    peek: function(G){ var p = peek123(G); return {text: p.bonus ? "+" : p.v, cls: p.bonus ? "v2048 d1" : MODES["123"].cls(p.v)}; },
     events: events123,
     begin: begin123,
     move: move123,
     score: score123,
     over: over123,
     cls: function(v){ return (CLS123[v] || "vbig") + " d" + String(v).length; },
+    label: function(v){ return v; },
+    stat2: function(G){ return ["Max", maxTile(G.grid)]; },
+    summary: function(r){ return "最大 " + r.stat; },
     milestones: [96, 384, 768, 1536, 3072],
-    celebrate: "toast"
+    celebrate: "toast",
+    note: function(v){ return v + "、到達"; }
+  },
+  "drop7": {
+    name: "7×7",
+    size: 7,
+    tap: true,
+    preview: true,
+    peek: function(G){ var v = peekDrop7(G); return {text: v, cls: "n" + v + " d1"}; },
+    events: eventsDrop7,
+    begin: beginDrop7,
+    move: moveDrop7,
+    score: function(G){ return G.acc; },
+    over: overDrop7,
+    cls: function(v){ return (v >= 1 ? "n" + v : v === 0 ? "gk" : "gkc") + " d1"; },
+    label: function(v){ return v >= 1 ? v : ""; },
+    stat2: function(G){ return ["Chain", G.bestChain]; },
+    summary: function(r){ return "最長 " + r.stat + "連鎖"; },
+    milestones: [3, 4, 5, 6, 7],
+    celebrate: "toast",
+    note: function(v){ return v + "連鎖"; }
   }
 };
 function mode(){ return MODES[(session && session.mode) || "2048"]; }
 
 /* ===================== board rendering ===================== */
 var cellsEl = $("cells"), tilesEl = $("tiles");
-(function(){
-  for (var i=0;i<16;i++){ cellsEl.appendChild(document.createElement("div")); }
-})();
+function buildCells(n){
+  cellsEl.innerHTML = "";
+  for (var i=0;i<n*n;i++){ cellsEl.appendChild(document.createElement("div")); }
+}
+buildCells(4);
 var els = {};   /* tile id -> element */
 
 function tileClass(v){ return "tile " + mode().cls(v); }
@@ -971,7 +1189,7 @@ function place(el, r, c){
 function makeEl(t){
   var el = document.createElement("div");
   el.className = tileClass(t.v);
-  el.textContent = t.v;
+  el.textContent = mode().label(t.v);
   place(el, t.r, t.c);
   tilesEl.appendChild(el);
   els[t.id] = el;
@@ -1021,7 +1239,11 @@ function renderBoard(res){
       t.isNew = false;
       return;
     }
-    if (el.textContent != t.v) el.textContent = t.v;
+    var want = tileClass(t.v);
+    if (el.className.indexOf("spawn") < 0 && el.className.indexOf("pop") < 0 && el.className !== want){
+      el.className = want;                 /* a block that cracked keeps its id */
+      el.textContent = mode().label(t.v);
+    }
     place(el, t.r, t.c);
   });
 }
@@ -1086,27 +1308,32 @@ function beginTurn(resume){
   clearBoard();
 
   var M = mode();
+  GN = M.size;
+  buildCells(GN);
+  $("s-play").setAttribute("data-grid", String(GN));
+
+  var base = {
+    grid: emptyGrid(),
+    events: M.events(session.seed + session.round),
+    elapsed: 0, startedAt: Date.now(),
+    over: false, dead: false, hit: {},
+    ei: 0, acc: 0, moves: 0, drops: 0, bestChain: 0
+  };
   if (resume && session.live){
     var L = session.live;
-    game = {
-      grid: emptyGrid(),
-      events: M.events(session.seed + session.round),
-      ei: L.ei, acc: L.acc || 0, moves: L.moves,
-      elapsed: L.elapsed, startedAt: Date.now(),
-      over: false, hit: L.hit || {}
-    };
-    for (var r=0;r<4;r++) for (var c=0;c<4;c++){
+    game = base;
+    game.ei = L.ei; game.acc = L.acc || 0; game.moves = L.moves;
+    game.drops = L.drops || 0; game.bestChain = L.bestChain || 0;
+    game.dead = !!L.dead;
+    game.elapsed = L.elapsed; game.hit = L.hit || {};
+    for (var r=0;r<GN;r++) for (var c=0;c<GN;c++){
       var v = L.grid[r][c];
-      if (v) game.grid[r][c] = {id: nextId++, v: v, r: r, c: c, merged: false};
+      if (v === null || v === undefined) continue;
+      if (v === 0 && GN !== 7) continue;              /* older saves wrote 0 for empty */
+      game.grid[r][c] = {id: nextId++, v: v, r: r, c: c, merged: false};
     }
   } else {
-    game = {
-      grid: emptyGrid(),
-      events: M.events(session.seed + session.round),
-      ei: 0, acc: 0, moves: 0,
-      elapsed: 0, startedAt: Date.now(),
-      over: false, hit: {}
-    };
+    game = base;
     M.begin(game);
   }
 
@@ -1126,10 +1353,18 @@ function paintRail(){
   var nx = $("pl-next");
   nx.hidden = !M.preview;
   if (M.preview){
-    var p = peek123(game);
+    var p = M.peek(game);
     var card = $("pl-next-tile");
-    card.className = p.bonus ? "tile v2048 d1" : ("tile " + M.cls(p.v));
-    card.textContent = p.bonus ? "+" : p.v;
+    card.className = "tile " + p.cls;
+    card.textContent = p.text;
+  }
+
+  var rise = $("pl-rise");
+  rise.hidden = M.size !== 7;
+  if (M.size === 7){
+    var left = RISE_EVERY - (game.drops % RISE_EVERY);
+    rise.textContent = "せり上がりまで あと " + left;
+    rise.className = left <= 3 ? "rise soon" : "rise";
   }
 
   var el = $("pl-target");
@@ -1159,13 +1394,14 @@ function paintTurnbar(){
 }
 function saveLive(){
   var g = [];
-  for (var r=0;r<4;r++){
+  for (var r=0;r<GN;r++){
     var row = [];
-    for (var c=0;c<4;c++){ row.push(game.grid[r][c] ? game.grid[r][c].v : 0); }
+    for (var c=0;c<GN;c++){ row.push(game.grid[r][c] ? game.grid[r][c].v : null); }
     g.push(row);
   }
   session.live = {
     grid: g, ei: game.ei, acc: game.acc, moves: game.moves,
+    drops: game.drops, bestChain: game.bestChain, dead: game.dead,
     elapsed: game.elapsed + (Date.now() - game.startedAt),
     hit: game.hit
   };
@@ -1197,7 +1433,7 @@ function doMove(dir){
       setTimeout(celebrate, 260);
       return;                       /* the board can wait; the choice cannot */
     }
-    toast(res.top + "、到達");
+    toast(M.note(res.top));
   }
   if (M.over(game)){
     game.over = true;
@@ -1215,9 +1451,10 @@ function overlay(html, wire){
   return v;
 }
 function statBlock(){
+  var s2 = mode().stat2(game);
   return "<div class=\"stats\">" +
     "<div class=\"stat\"><span class=\"k\">Score</span><span class=\"v\">" + fmt(mode().score(game)) + "</span></div>" +
-    "<div class=\"stat\"><span class=\"k\">Max</span><span class=\"v\">" + maxTile(game.grid) + "</span></div>" +
+    "<div class=\"stat\"><span class=\"k\">" + s2[0] + "</span><span class=\"v\">" + s2[1] + "</span></div>" +
     "<div class=\"stat\"><span class=\"k\">Moves</span><span class=\"v\">" + game.moves + "</span></div>" +
   "</div>";
 }
@@ -1242,7 +1479,10 @@ function finishTurn(voluntary){
   game.over = true;
   var elapsed = game.elapsed + (Date.now() - game.startedAt);
   var p = session.players[session.idx];
-  var rec = {name: p.name, color: session.idx, score: mode().score(game), max: maxTile(game.grid), moves: game.moves, ms: elapsed, gaveUp: !!voluntary};
+  var M = mode();
+  var s2 = M.stat2(game);
+  var rec = {name: p.name, color: session.idx, mode: session.mode, score: M.score(game),
+             stat: s2[1], moves: game.moves, ms: elapsed, gaveUp: !!voluntary};
 
   var title = voluntary ? "おつかれさま" : "手が尽きた";
   var last = session.idx === session.players.length - 1;
@@ -1251,7 +1491,7 @@ function finishTurn(voluntary){
     "<h2>" + title + "</h2>" +
     "<div class=\"stats\">" +
       "<div class=\"stat\"><span class=\"k\">Score</span><span class=\"v\">" + fmt(rec.score) + "</span></div>" +
-      "<div class=\"stat\"><span class=\"k\">Max</span><span class=\"v\">" + rec.max + "</span></div>" +
+      "<div class=\"stat\"><span class=\"k\">" + s2[0] + "</span><span class=\"v\">" + s2[1] + "</span></div>" +
       "<div class=\"stat\"><span class=\"k\">Time</span><span class=\"v\">" + clock(rec.ms) + "</span></div>" +
     "</div>" +
     "<button class=\"btn primary\" data-next=\"1\">" + (last ? "結果を見る" : "次の人へ") + "</button>",
@@ -1299,7 +1539,7 @@ function endRound(){
       "<span class=\"pos\">" + (i+1) + "</span>" +
       "<span class=\"dot\"></span>" +
       "<span class=\"who\"><span class=\"nm\"></span>" +
-      "<span class=\"sub\">最大 " + r.max + " · " + r.moves + "手 · " + clock(r.ms) + (r.gaveUp && r.max < 2048 ? " · 途中終了" : "") + "</span></span>" +
+      "<span class=\"sub\">" + MODES[r.mode || "2048"].summary(r) + " · " + r.moves + "手 · " + clock(r.ms) + (r.gaveUp ? " · 途中終了" : "") + "</span></span>" +
       "<span class=\"pts\">" + fmt(r.score) + "</span>";
     row.querySelector(".nm").textContent = r.name;
     list.appendChild(row);
@@ -1359,8 +1599,10 @@ function paintSetup(){
   }
   $("add-player").hidden = draft.length >= 4;
   $("sw-target").setAttribute("aria-checked", prefs.showTarget ? "true" : "false");
-  $("mode-2048").setAttribute("aria-checked", prefs.mode === "123" ? "false" : "true");
-  $("mode-123").setAttribute("aria-checked", prefs.mode === "123" ? "true" : "false");
+  var m = MODES[prefs.mode] ? prefs.mode : "2048";
+  $("mode-2048").setAttribute("aria-checked", m === "2048" ? "true" : "false");
+  $("mode-123").setAttribute("aria-checked", m === "123" ? "true" : "false");
+  $("mode-drop7").setAttribute("aria-checked", m === "drop7" ? "true" : "false");
 }
 function pickMode(m){
   prefs.mode = m;
@@ -1369,6 +1611,7 @@ function pickMode(m){
 }
 $("mode-2048").addEventListener("click", function(){ pickMode("2048"); });
 $("mode-123").addEventListener("click", function(){ pickMode("123"); });
+$("mode-drop7").addEventListener("click", function(){ pickMode("drop7"); });
 $("add-player").addEventListener("click", function(){ if (draft.length < 4){ draft.push(""); paintSetup(); } });
 $("sw-target").addEventListener("click", function(){
   prefs.showTarget = !prefs.showTarget;
@@ -1388,7 +1631,7 @@ $("start-round").addEventListener("click", function(){
   }
   roster = players.map(function(p){ return p.name; });
   save(K.players, roster);
-  session = newSession(players, prefs.mode === "123" ? "123" : "2048");
+  session = newSession(players, MODES[prefs.mode] ? prefs.mode : "2048");
   persist();
   toHandoff();
 });
@@ -1456,14 +1699,34 @@ play.addEventListener("touchmove", function(e){
   if (start) e.preventDefault();
 }, {passive:false});
 
-play.addEventListener("touchend", function(e){
-  if (!start) return;
-  var t = e.changedTouches[0];
-  var dx = t.clientX - start.x, dy = t.clientY - start.y;
-  start = null;
+/* 7×7 takes a tap on a column rather than a swipe. The column is read from the
+   x position alone, so a thumb landing above or below the board still counts -
+   the whole screen is the target, not the little disc. */
+function doDrop(clientX){
+  var b = $("board").getBoundingClientRect();
+  var cs = getComputedStyle($("s-play"));
+  var pad = parseFloat(cs.getPropertyValue("--pad")) || 0;
+  var span = (b.width - pad*2) / 7;
+  var col = Math.floor((clientX - b.left - pad) / span);
+  doMove(Math.max(0, Math.min(6, col)));
+}
+function release(x, y, sx, sy){
+  var dx = x - sx, dy = y - sy;
+  if (mode().tap){
+    if (Math.abs(dx) < 26 && Math.abs(dy) < 26) doDrop(x);
+    return;
+  }
   if (Math.abs(dx) < THRESHOLD && Math.abs(dy) < THRESHOLD) return;
   if (Math.abs(dx) > Math.abs(dy)) doMove(dx > 0 ? "right" : "left");
   else doMove(dy > 0 ? "down" : "up");
+}
+
+play.addEventListener("touchend", function(e){
+  if (!start) return;
+  var t = e.changedTouches[0];
+  var s = start;
+  start = null;
+  release(t.clientX, t.clientY, s.x, s.y);
 }, {passive:true});
 
 play.addEventListener("touchcancel", function(){ start = null; }, {passive:true});
@@ -1476,11 +1739,9 @@ play.addEventListener("pointerdown", function(e){
 });
 play.addEventListener("pointerup", function(e){
   if (!pdown) return;
-  var dx = e.clientX - pdown.x, dy = e.clientY - pdown.y;
+  var p = pdown;
   pdown = null;
-  if (Math.abs(dx) < THRESHOLD && Math.abs(dy) < THRESHOLD) return;
-  if (Math.abs(dx) > Math.abs(dy)) doMove(dx > 0 ? "right" : "left");
-  else doMove(dy > 0 ? "down" : "up");
+  release(e.clientX, e.clientY, p.x, p.y);
 });
 
 var KEYS = {ArrowLeft:"left", ArrowRight:"right", ArrowUp:"up", ArrowDown:"down",
@@ -1488,6 +1749,13 @@ var KEYS = {ArrowLeft:"left", ArrowRight:"right", ArrowUp:"up", ArrowDown:"down"
 document.addEventListener("keydown", function(e){
   if (current !== "play") return;
   if (e.target.tagName === "INPUT") return;
+  if (mode().tap){
+    var n = "1234567".indexOf(e.key);
+    if (n < 0) return;
+    e.preventDefault();
+    doMove(n);
+    return;
+  }
   var dir = KEYS[e.key];
   if (!dir) return;
   e.preventDefault();
